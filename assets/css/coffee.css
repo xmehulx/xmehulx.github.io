@@ -1,0 +1,7 @@
+img.coffee {
+	border: 1px solid #ffffff;
+	border-radius: 100px;
+	padding: 2px;
+	height: 50%;
+	width: 50%;
+}
