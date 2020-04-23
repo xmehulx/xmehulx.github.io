@@ -6,11 +6,12 @@ description: Mehul
 
 # User settings
 username: Mehul Singh
-user_description: Mehul is a bachelor's student majoring in cybersecurity, who is currently preparing for his OSCP certification. He writes writeups for Hackthebox machines and during his free time is a gamer and clicks photos 
-user_title: Gamer . Pen-tester
+user_description: Mehul is a bachelor's student majoring in cybersecurity, who is currently preparing for his OSCP certification. He writes writeups for Hackthebox machines and during his free time is a photographer and a gamer. He's looking for internship opportunities in cybersec. field to enhance his real-life experience and become an even better penetration-tester.
+user_title: Pen-tester | Gamer
 email: singhmehul@hotmail.com
 twitter_username: _xmehulx_
 github_username: xmehulx
+buymeacoffee_username: xmehulx
 
 # Google-analytics
 google-analytics:
