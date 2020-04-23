@@ -49,8 +49,8 @@ acorn-object-spread@^1.0.0:
   dependencies:
     acorn "^3.1.0"
 
-acorn@^3.0.4, acorn@^3.1.0:
-  version "3.3.0"
+acorn@^5.7.4, acorn@^3.1.0:
+  version "5.7.4"
   resolved "https://registry.yarnpkg.com/acorn/-/acorn-3.3.0.tgz#45e37fb39e8da3f25baee3ff5369e2bb5f22017a"
 
 after@0.8.2:
@@ -643,7 +643,7 @@ buble@^0.12.0:
   version "0.12.5"
   resolved "https://registry.yarnpkg.com/buble/-/buble-0.12.5.tgz#c66ffe92f9f4a3c65d3256079b711e2bd0bc5013"
   dependencies:
-    acorn "^3.1.0"
+    acorn "^5.7.4"
     acorn-jsx "^3.0.1"
     acorn-object-spread "^1.0.0"
     chalk "^1.1.3"
