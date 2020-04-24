@@ -15,6 +15,6 @@ buymeacoffee_username: xmehulx
 
 # Google-analytics
 google-analytics:
-  id: ""
+  id: "UA-164500584-1"
 
 exclude: ['package.json', 'src' , 'node_modules']
