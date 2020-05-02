@@ -1,4 +1,55 @@
-<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom"><generator uri="http://jekyllrb.com" version="3.6.3">Jekyll</generator><link href="https://xmehulx.github.io/write-ups/feed.xml" rel="self" type="application/atom+xml" /><link href="https://xmehulx.github.io/write-ups/" rel="alternate" type="text/html" /><updated>2020-05-02T09:48:56-04:00</updated><id>https://xmehulx.github.io/write-ups/</id><title>heisenb3rg</title><subtitle>Hackthebox writeups</subtitle><entry><title>“Magic” Write-up</title><link href="https://xmehulx.github.io/write-ups/magic/" rel="alternate" type="text/html" title="&quot;**Magic**&quot; Write-up" /><published>2020-04-22T00:00:00-04:00</published><updated>2020-04-22T00:00:00-04:00</updated><id>https://xmehulx.github.io/write-ups/magic</id><content type="html" xml:base="https://xmehulx.github.io/write-ups/magic/">&lt;figure&gt;
+<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom"><generator uri="http://jekyllrb.com" version="3.6.3">Jekyll</generator><link href="https://xmehulx.github.io/write-ups/feed.xml" rel="self" type="application/atom+xml" /><link href="https://xmehulx.github.io/write-ups/" rel="alternate" type="text/html" /><updated>2020-05-02T14:11:20-04:00</updated><id>https://xmehulx.github.io/write-ups/</id><title>heisenb3rg</title><subtitle>Hackthebox writeups</subtitle><entry><title>“OpenAdmin” Write-up</title><link href="https://xmehulx.github.io/write-ups/openadmin/" rel="alternate" type="text/html" title="&quot;**OpenAdmin**&quot; Write-up" /><published>2020-05-02T00:00:00-04:00</published><updated>2020-05-02T00:00:00-04:00</updated><id>https://xmehulx.github.io/write-ups/openadmin</id><content type="html" xml:base="https://xmehulx.github.io/write-ups/openadmin/">&lt;figure&gt;
+	&lt;img style=&quot;border-radius:10px&quot; src=&quot;https://xmehulx.github.io/write-ups/images/machines/openadmin/info.png&quot; /&gt;
+&lt;/figure&gt;
+
+&lt;p&gt;“OpenAdmin” is an easy-level Linux machine which got retired today. It made use of OpenNetAdmin CVE to gain user and exploit text-editor with root privileges to gain root.&lt;/p&gt;
+
+&lt;h2 id=&quot;initial-scan&quot;&gt;Initial Scan&lt;/h2&gt;
+&lt;hr /&gt;
+&lt;p&gt;Upon performing a normal nmap scan as &lt;code class=&quot;highlighter-rouge&quot;&gt;nmap -sCV -A openadmin.htb&lt;/code&gt; we get&lt;/p&gt;
+
+&lt;figure&gt;
+	&lt;img src=&quot;https://xmehulx.github.io/write-ups/images/machines/openadmin/nmap.png&quot; /&gt;
+&lt;/figure&gt;
+
+&lt;p&gt;Upon checking the website, it turned to be a default apache page. I checked for all the ports and even that didn’t give anything. After this I tried brute forcing the site with medium wordlist and it gave an interesting page ‘/ona’. When I opened it, I saw that it was an OpenNetAdmin page which was running on an out-dated version. Upon looking it up, there was an exploit available for that exact version. After converting the pre-available file from dos2unix format, I ran it and got the shell!&lt;/p&gt;
+
+&lt;figure&gt;
+	&lt;img src=&quot;https://xmehulx.github.io/write-ups/images/machines/openadmin/ona.png&quot; /&gt;
+&lt;/figure&gt;
+
+&lt;h2 id=&quot;user-flag&quot;&gt;User Flag&lt;/h2&gt;
+&lt;hr /&gt;
+&lt;p&gt;But it was an extremely restricted shell and the most I could do at this point was ls and cat. Searching online for its configuration file I found that it it located by default at &lt;em&gt;“/opt/ona/www/config/config.inc.php”&lt;/em&gt;. So after looking at it I found the cred file database_settings.inc.php stored at $dbconffile location, which contained a password, but no username!&lt;/p&gt;
+
+&lt;figure&gt;
+	&lt;img src=&quot;https://xmehulx.github.io/write-ups/images/machines/openadmin/cred1.png&quot; /&gt;
+&lt;/figure&gt;
+
+&lt;p&gt;Now I needed to find a username for this password, and after running &lt;code class=&quot;highlighter-rouge&quot;&gt;ls -l /var/www&lt;/code&gt;  I found that there was a user named Jimmy. So got a username and password and got logged in as user &lt;em&gt;jimmy&lt;/em&gt;.&lt;/p&gt;
+
+&lt;p&gt;But even this user doesn’t give user flag. So I looked for more users and found a user named “Joanna”. More enumeration was needed and I found /var/www/internal/main.php which prints the RSA key of user Joanna. GREAT! But after requesting the php file, it wasn’t found, strange :/ So I looked up what all ports are running using &lt;code class=&quot;highlighter-rouge&quot;&gt;netstat -tulpn&lt;/code&gt; and found a suspicious high port open at port number 52846. So, I again requested that php file but at this high port number and successfully got Joanna’s RSA key!&lt;/p&gt;
+
+&lt;figure&gt;
+	&lt;img src=&quot;https://xmehulx.github.io/write-ups/images/machines/openadmin/rsa.png&quot; /&gt;
+&lt;/figure&gt;
+
+&lt;p&gt;After converting this key to John’s format and running John on the hash we get the following password for Joanna:&lt;/p&gt;
+
+&lt;figure&gt;
+	&lt;img src=&quot;https://xmehulx.github.io/write-ups/images/machines/openadmin/pass.png&quot; /&gt;
+&lt;/figure&gt;
+
+&lt;p&gt;With which we can log-in as user &lt;em&gt;joanna&lt;/em&gt;.&lt;/p&gt;
+
+&lt;h2 id=&quot;root-flag&quot;&gt;Root Flag&lt;/h2&gt;
+&lt;hr /&gt;
+&lt;p&gt;One of the first things I usually check after getting user flag is what commands I can run as root. So I did the same here and found that I could open nano editor as root. Awesome! Since I can open nano as root, I can read any file (including root.txt file!), by using &lt;strong&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;ctrl-x&lt;/code&gt;&lt;/strong&gt;.&lt;/p&gt;
+
+&lt;figure&gt;
+	&lt;img src=&quot;https://xmehulx.github.io/write-ups/images/machines/openadmin/root.png&quot; /&gt;
+&lt;/figure&gt;
+&lt;hr /&gt;</content><category term="servmon" /><category term="ctf" /><category term="windows" /><category term="htb" /><category term="hackthebox" /><category term="write-up" /><summary>Easy-level Windows machine</summary></entry><entry><title>“Magic” Write-up</title><link href="https://xmehulx.github.io/write-ups/magic/" rel="alternate" type="text/html" title="&quot;**Magic**&quot; Write-up" /><published>2020-04-22T00:00:00-04:00</published><updated>2020-04-22T00:00:00-04:00</updated><id>https://xmehulx.github.io/write-ups/magic</id><content type="html" xml:base="https://xmehulx.github.io/write-ups/magic/">&lt;figure&gt;
         &lt;img style=&quot;border-radius:10px&quot; src=&quot;../images/machines/magic/info.png&quot; /&gt;
 &lt;/figure&gt;
 
@@ -142,8 +193,4 @@
         &lt;img style=&quot;border-radius:10px&quot; src=&quot;../images/machines/traceback/info.png&quot; /&gt;
 &lt;/figure&gt;
 
-&lt;p&gt;Since this machine is still active, write-up is password protected. You can download it from &lt;a href=&quot;https://xmehulx.github.io/write-ups&quot;&gt;here&lt;/a&gt;&lt;/p&gt;</content><category term="traceback" /><category term="ctf" /><category term="linux" /><category term="hackthebox" /><category term="htb" /><category term="write-up" /><summary>Easy-level Linux machine</summary></entry><entry><title>“OpenAdmin” Write-up</title><link href="https://xmehulx.github.io/write-ups/openadmin/" rel="alternate" type="text/html" title="&quot;**OpenAdmin**&quot; Write-up" /><published>2020-02-20T00:00:00-05:00</published><updated>2020-02-20T00:00:00-05:00</updated><id>https://xmehulx.github.io/write-ups/openadmin</id><content type="html" xml:base="https://xmehulx.github.io/write-ups/openadmin/">&lt;figure&gt;
-	&lt;img style=&quot;border-radius:10px&quot; src=&quot;../images/machines/openadmin/info.png&quot; /&gt;
-&lt;/figure&gt;
-
-&lt;p&gt;Since this machine is still active, write-up is password protected. You can download it from &lt;a href=&quot;https://xmehulx.github.io/write-ups&quot;&gt;here&lt;/a&gt;&lt;/p&gt;</content><category term="openadmin" /><category term="ctf" /><category term="linux" /><category term="hackthebox" /><category term="htb" /><category term="write-up" /><summary>Easy-level Linux machine</summary></entry></feed>
+&lt;p&gt;Since this machine is still active, write-up is password protected. You can download it from &lt;a href=&quot;https://xmehulx.github.io/write-ups&quot;&gt;here&lt;/a&gt;&lt;/p&gt;</content><category term="traceback" /><category term="ctf" /><category term="linux" /><category term="hackthebox" /><category term="htb" /><category term="write-up" /><summary>Easy-level Linux machine</summary></entry></feed>
