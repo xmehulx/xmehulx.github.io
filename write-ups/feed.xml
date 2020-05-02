@@ -1,4 +1,88 @@
-<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom"><generator uri="http://jekyllrb.com" version="3.6.3">Jekyll</generator><link href="https://xmehulx.github.io/write-ups/feed.xml" rel="self" type="application/atom+xml" /><link href="https://xmehulx.github.io/write-ups/" rel="alternate" type="text/html" /><updated>2020-04-29T06:53:26-04:00</updated><id>https://xmehulx.github.io/write-ups/</id><title>Write-ups</title><subtitle>Hackthebox writeups</subtitle><entry><title>“Mango” Write-up</title><link href="https://xmehulx.github.io/write-ups/mango/" rel="alternate" type="text/html" title="&quot;**Mango**&quot; Write-up" /><published>2020-04-01T00:00:00-04:00</published><updated>2020-04-01T00:00:00-04:00</updated><id>https://xmehulx.github.io/write-ups/mango</id><content type="html" xml:base="https://xmehulx.github.io/write-ups/mango/">&lt;figure&gt;
+<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom"><generator uri="http://jekyllrb.com" version="3.6.3">Jekyll</generator><link href="https://xmehulx.github.io/write-ups/feed.xml" rel="self" type="application/atom+xml" /><link href="https://xmehulx.github.io/write-ups/" rel="alternate" type="text/html" /><updated>2020-05-02T09:48:56-04:00</updated><id>https://xmehulx.github.io/write-ups/</id><title>heisenb3rg</title><subtitle>Hackthebox writeups</subtitle><entry><title>“Magic” Write-up</title><link href="https://xmehulx.github.io/write-ups/magic/" rel="alternate" type="text/html" title="&quot;**Magic**&quot; Write-up" /><published>2020-04-22T00:00:00-04:00</published><updated>2020-04-22T00:00:00-04:00</updated><id>https://xmehulx.github.io/write-ups/magic</id><content type="html" xml:base="https://xmehulx.github.io/write-ups/magic/">&lt;figure&gt;
+        &lt;img style=&quot;border-radius:10px&quot; src=&quot;../images/machines/magic/info.png&quot; /&gt;
+&lt;/figure&gt;
+
+&lt;p&gt;“Magic” is a medium-level Linux machine created by &lt;a href=&quot;https://www.hackthebox.eu/home/users/profile/31190&quot;&gt;TRX&lt;/a&gt; which focused on basic SQL injection, file upload vulnerability, SQL database enumeration and exploiting an SUID.&lt;/p&gt;
+
+&lt;h2 id=&quot;initial-scan&quot;&gt;Initial Scan&lt;/h2&gt;
+
+&lt;p&gt;Performing the regular nmap scan &lt;code class=&quot;highlighter-rouge&quot;&gt;nmap -sCV -A magic.htb&lt;/code&gt; gave the following result&lt;/p&gt;
+
+&lt;figure&gt;
+	&lt;img src=&quot;../images/machines/magic/nmap.png&quot; /&gt;
+&lt;/figure&gt;
+
+&lt;p&gt;So only two ports were open. I headed on to the magic’s webpage where quite some photos were pre-uploaded&lt;/p&gt;
+
+&lt;figure&gt;
+	&lt;img src=&quot;../images/machines/magic/magic.png&quot; /&gt;
+&lt;/figure&gt;
+
+&lt;p&gt;The first thought I had was if it was possible to upload a shell as it said to login in order to upload images. So I went to login.&lt;/p&gt;
+
+&lt;h2 id=&quot;sql-injection&quot;&gt;SQL Injection&lt;/h2&gt;
+
+&lt;p&gt;In the login page, I initially tried some common username:password combinations such as admin:admin, user:user, etc, but they didn’t work. Then, I tried the most basic SQL injection &lt;strong&gt;’–:’–&lt;/strong&gt; and it worked! lol. So I went on to uploading the image.&lt;/p&gt;
+
+&lt;figure&gt;
+	&lt;img src=&quot;../images/machines/magic/login.png&quot; /&gt;
+&lt;/figure&gt;
+
+&lt;h2 id=&quot;file-upload&quot;&gt;File Upload&lt;/h2&gt;
+
+&lt;p&gt;Now, I had to find a way to upload my shell. For starters, I tried php files directly but was caught (&lt;em&gt;“What are you trying to do there?”&lt;/em&gt;). So I had to try something else.&lt;/p&gt;
+
+&lt;p&gt;I though of changing the header of a reverse shell to that of a PNG file. For that, I made a small python script which inputs hex into a file and then input the &lt;a href=&quot;https://www.w3.org/TR/PNG-Structure.html&quot;&gt;PNG’s header&lt;/a&gt; into it. Then I got the hex of my reverse shell using &lt;code class=&quot;highlighter-rouge&quot;&gt;hexdump -v -e '/1 &quot;%02X &quot;' &amp;lt;file&amp;gt;&lt;/code&gt; and appended it to the previous file and added the png extension.&lt;/p&gt;
+
+&lt;figure&gt;
+	&lt;img src=&quot;../images/machines/magic/hex.png&quot; /&gt;
+&lt;/figure&gt;
+
+&lt;p&gt;And it worked! There are other methods as well, you can ping me to know them ;)&lt;/p&gt;
+
+&lt;h2 id=&quot;reverse-shell&quot;&gt;Reverse Shell&lt;/h2&gt;
+
+&lt;p&gt;I, then navigated to where my image was stored and instantly got a reverse shell back.&lt;/p&gt;
+
+&lt;figure&gt;
+	&lt;img src=&quot;../images/machines/magic/revshell.png&quot; /&gt;
+&lt;/figure&gt;
+
+&lt;h2 id=&quot;getting-user&quot;&gt;Getting User&lt;/h2&gt;
+
+&lt;p&gt;I enumerated the machine a bit and found &lt;strong&gt;db.php5&lt;/strong&gt; at &lt;em&gt;/var/www/Magic&lt;/em&gt;, which contained a cred for user &lt;strong&gt;theseus&lt;/strong&gt;.&lt;/p&gt;
+
+&lt;figure&gt;
+	&lt;img src=&quot;../images/machines/magic/dbtheseus.png&quot; /&gt;
+&lt;/figure&gt;
+
+&lt;p&gt;I tried to change user with this cred but it wasn’t the password for Theseus user, but it could be the password for Theseus in the Database! So I dumped the SQL data using the command &lt;code class=&quot;highlighter-rouge&quot;&gt;sqldump&lt;/code&gt; and got another cred for Theseus.&lt;/p&gt;
+
+&lt;figure&gt;
+	&lt;img src=&quot;../images/machines/magic/theseus.png&quot; /&gt;
+&lt;/figure&gt;
+
+&lt;p&gt;With this cred, I could login as theseus and get the user flag.&lt;/p&gt;
+
+&lt;figure&gt;
+	&lt;img src=&quot;../images/machines/magic/user.png&quot; /&gt;
+&lt;/figure&gt;
+
+&lt;h2 id=&quot;getting-root&quot;&gt;Getting Root&lt;/h2&gt;
+
+&lt;p&gt;After that I uploaded &lt;em&gt;linpeas&lt;/em&gt; and executed it to find something interesting. To be honest, initially I couldn’t find anything particular other than trying everything which depressed me, so I just compared the linpeas’ info with other linpeas’ to see the difference and found that the binary &lt;code class=&quot;highlighter-rouge&quot;&gt;sysinfo&lt;/code&gt; was something new (had never heard of this command!). On running it I at once understood that it was using output of 3-4 different commands out of which &lt;code class=&quot;highlighter-rouge&quot;&gt;free&lt;/code&gt; was one.&lt;/p&gt;
+
+&lt;figure&gt;
+	&lt;img src=&quot;../images/machines/magic/sysinfo.png&quot; /&gt;
+&lt;/figure&gt;
+
+&lt;p&gt;That meant I could create a fake &lt;code class=&quot;highlighter-rouge&quot;&gt;free&lt;/code&gt; (with a reverse shell in it!), add its path to the environment and run sysinfo to get reverse shell. So I created a file named “free” with &lt;a href=&quot;https://github.com/swisskyrepo/PayloadsAllTheThings/blob/master/Methodology%20and%20Resources/Reverse%20Shell%20Cheatsheet.md#python&quot;&gt;Python3 reverse shell&lt;/a&gt;, uploaded it to the &lt;em&gt;/tmp&lt;/em&gt; directory, changed its permission to 755, added its path to the $PATH variable using &lt;code class=&quot;highlighter-rouge&quot;&gt;export PATH=/tmp:$PATH&lt;/code&gt;, executed &lt;code class=&quot;highlighter-rouge&quot;&gt;sysinfo&lt;/code&gt; and BAM! Got a reverse shell back as root!&lt;/p&gt;
+
+&lt;figure&gt;
+	&lt;img src=&quot;../images/machines/magic/root.png&quot; /&gt;
+&lt;/figure&gt;
+
+&lt;p&gt;PS: There is a &lt;strong&gt;C file&lt;/strong&gt; in the root folder to see what are the other 3 commands &lt;code class=&quot;highlighter-rouge&quot;&gt;sysinfo&lt;/code&gt; uses to give output.&lt;/p&gt;</content><category term="magic" /><category term="ctf" /><category term="linux" /><category term="htb" /><category term="hackthebox" /><category term="write-up" /><summary>Medium-level Linux machine</summary></entry><entry><title>“Mango” Write-up</title><link href="https://xmehulx.github.io/write-ups/mango/" rel="alternate" type="text/html" title="&quot;**Mango**&quot; Write-up" /><published>2020-04-01T00:00:00-04:00</published><updated>2020-04-01T00:00:00-04:00</updated><id>https://xmehulx.github.io/write-ups/mango</id><content type="html" xml:base="https://xmehulx.github.io/write-ups/mango/">&lt;figure&gt;
 	&lt;img style=&quot;border-radius:10px&quot; src=&quot;/images/machines/mango/mango.png&quot; /&gt;
 &lt;/figure&gt;
 
