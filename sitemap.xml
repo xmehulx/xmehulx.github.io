@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.sitemaps.org/schemas/sitemap/0.9 http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd" xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+<url>
+	<loc>https://xmehulx.github.io/write-ups/quick/</loc>
+	<lastmod>2020-05-12</lastmod>
+	<changefreq>monthly</changefreq>
+	<priority>0.5</priority>
+</url>
+<url>
+	<loc>https://xmehulx.github.io/write-ups/admirer/</loc>	
+	<lastmod>2020-05-06</lastmod>
+	<changefreq>monthly</changefreq>
+	<priority>0.5</priority>
+</url>
+<url>
+	<loc>https://xmehulx.github.io/write-ups/openadmin/</loc>
+	<lastmod>2020-05-02</lastmod>
+	<changefreq>monthly</changefreq>
+	<priority>0.5</priority>
+</url>	
+<url>
+	<loc>https://xmehulx.github.io/write-ups/magic/</loc>
+	<lastmod>2020-04-22</lastmod>
+	<changefreq>monthly</changefreq>
+	<priority>0.5</priority>
+</url>
+<url>
+	<loc>https://xmehulx.github.io/write-ups/mango/</loc>
+	<lastmod>2020-04-01</lastmod>
+	<changefreq>monthly</changefreq>
+	<priority>0.5</priority>
+</url>
+<url>
+	<loc>https://xmehulx.github.io/write-ups/traceback/</loc>
+	<lastmod>2020-02-22</lastmod>
+	<changefreq>monthly</changefreq>
+	<priority>0.5</priority>
+</url>
+<url>
+	<loc>https://xmehulx.github.io/write-ups/</loc>
+	<lastmod>2020-05-12</lastmod>
+	<changefreq>weekly</changefreq>
+	<priority>0.6</priority>
+</url>
+<url>
+	<loc>https://xmehulx.github.io/write-ups/posts.html</loc>
+	<lastmod>2020-05-12</lastmod>
+	<changefreq>weekly</changefreq>
+	<priority>0.8</priority>
+</url>
+<url>
+	<loc>https://xmehulx.github.io/write-ups/tags.html</loc>
+	<changefreq>weekly</changefreq>
+	<priority>0.5</priority>
+</url>
+<url>
+	<loc>https://xmehulx.github.io/</loc>
+	<lastmod>2020-05-12</lastmod>
+	<changefreq>weekly</changefreq>
+	<priority>1</priority>
+</url>
+</urlset>
