@@ -11,3 +11,7 @@ ExpiresByType image/x-icon "access 1 year"
 ExpiresDefault "access 1 month"
 </IfModule>
 ## EXPIRES CACHING ##
+
+## 404 redirect ##
+ErrorDocument 404 /404
+## 404 redirect ##
