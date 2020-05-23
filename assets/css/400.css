@@ -1,8 +1,9 @@
 body {
-        background-color:#232323;
-        align:center;
-        color: #fff;
-	font-family: "Pragmata";
+    font-family: "Pragmata";
+    font-size: 1.5rem; 
+    background-color:#232323;
+    align:center;
+    color: #fff;
 }
 @font-face {
   font-family: "Pragmata";
@@ -15,7 +16,8 @@ body {
         margin:0% auto;
 }
 img {
-  padding:5%;
+  max-width: 100%;
+  padding: 5%;
   margin-left: auto;
   margin-right: auto;
   display: block;
@@ -25,15 +27,12 @@ p {
   text-align: center;
 }
 p.text {
-    font-family: "Pragmata";
-    font-size: 1.5em; 
     text-align: center;
 }
 
-<!-- link -->
+/* link */
 div.border {
 	width:100%;
-	margin-left:60%;
 }
 p.link {
     font-color:#ff0000;
@@ -43,10 +42,10 @@ p.link {
 
 a{
   margin: 1%;
-  font-size:3em;
+  font-size:3rem;
   display: block;
   color: white;
-  width:10em;
+  width:10rem;
   text-decoration: none;
   position: relative;
 }
@@ -56,14 +55,37 @@ a::after{
   background: white;
   font-family: "Pragmata";
   mix-blend-mode: exclusion;
-  width: calc(100% + 0em);
+  width: calc(100% + 0rem);
   height: 0;
   position: absolute;
-  bottom: -0.1em;
-  left: 0em;
+  bottom: -0.1rem;
+  left: 0rem;
   transition: all .3s cubic-bezier(0.445, 0.05, 0.55, 0.95);
 }
 a:hover::after{
-        height: calc(100% + 0.2em)
+        height: calc(100% + 0.2rem)
 }
-  
+
+/* responsive */
+
+* {
+  box-sizing: border-box;
+}
+
+html { font-size:100%; }
+
+/* Tablet Landscape */
+@media screen and (max-width: 1060px) {
+    #primary { width:67%; }
+    #secondary { width:30%; margin-left:3%;}  
+}
+
+/* Tabled Portrait */
+@media screen and (max-width: 768px) {
+    #primary { width:100%; }
+    #secondary { width:100%; margin:0; border:none; }
+}
+
+@media (min-width: 640px) { body {font-size:1rem;} } 
+@media (min-width:960px) { body {font-size:1.2rem;} } 
+@media (min-width:1100px) { body {font-size:1.5rem;} }
