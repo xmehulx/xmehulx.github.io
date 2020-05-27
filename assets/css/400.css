@@ -29,7 +29,9 @@ p {
   text-align: center;
 }
 p.text {
-    text-align: center;
+  padding-left: 0.5rem;
+  padding-right: 1rem;
+  text-align: center;
 }
 
 /* link */
