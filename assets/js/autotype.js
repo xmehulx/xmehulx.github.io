@@ -5,7 +5,7 @@ const textArray = [
   "spawn consciousness",
   "echo $SOUL | grep motivation",  
   "systemctl enable focus",
-  "while [ $energy -gt 0 ]; do; ping brain; done",
+  "while [ $energy -gt 0 ]; do ping brain; done",
   "sleep",
   ""
 ];
