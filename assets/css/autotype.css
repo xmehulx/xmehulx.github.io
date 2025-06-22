@@ -1,0 +1,58 @@
+.autotype-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 10vh;
+	text-align: center;
+    max-width: 100%;
+}
+
+.autotype {
+    padding: 0.25em;
+	max-width: 100%;
+    font-family: 'Source Code Pro', monospace;
+	align-items: center;
+	text-align: center;
+	display: inline-block;
+}
+
+.autotype p {
+  	color: #39ff74;
+	white-space: nowrap; /*normal;*/
+  	text-align: center;
+  	overflow: hidden;
+	font-size: clamp(0.75rem, 5vw, 2rem);
+}
+
+@media (max-width: 600px) {
+  .autotype p {
+    white-space: normal;    /* Allow wrap on small screens */
+    font-size: clamp(0.69rem, 4vw, 1.5rem); /* Slightly smaller & more flexible font on phones */
+  }
+}
+
+.autotype p span.typed-text {
+  font-weight: normal;
+  color: #fff;
+}
+.autotype p span.cursor {
+  display: inline-block;
+  background-color: #ccc;
+  margin-left: 0.1rem;
+  animation: blink 1s infinite;
+}
+.autotype p span.cursor.typing {
+  animation: none;
+}
+
+.shell-prompt {
+    color: #39ff74;
+}
+
+@keyframes blink {
+  0%  { background-color: #ccc; }
+  49% { background-color: #ccc; }
+  50% { background-color: transparent; }
+  99% { background-color: transparent; }
+  100%  { background-color: #ccc; }
+}
